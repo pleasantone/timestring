@@ -9,6 +9,7 @@ from timestring import Date
 from timestring import Range
 from timestring import parse
 from timestring.text2num import text2num
+from timestring.timestring_re import TIMESTRING_RE as ts
 
 
 @ddt
@@ -405,6 +406,23 @@ class timestringTests(unittest.TestCase):
         date2 = date1 + "10 seconds"
         self.assertEqual(date1.second + 10, date2.second)
 
+    def test_word_boundaries(self):
+        res = ts.search("next mon")
+        self.assertNotEqual(res, None)
+        res = ts.search("santa monica")
+        self.assertEqual(res, None)
+        res = ts.search("tuesday two weeks ago")
+        self.assertNotEqual(res, None)
+        res = ts.search("fri")
+        self.assertNotEqual(res, None)
+        res = ts.search("dec")
+        self.assertNotEqual(res, None)
+        res = ts.search("Current weather in East hanover new jersey")
+        self.assertEqual(res, None)
+        res = ts.search("august")
+        self.assertNotEqual(res, None)
+        res = ts.search("23rd feb 9:35pm")
+        self.assertNotEqual(res, None)
 
 def main():
     os.environ['TZ'] = 'UTC'
