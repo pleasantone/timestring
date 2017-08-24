@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 from setuptools import setup
 
-version = '1.6.2'
+version = '1.6.5'
+
 classifiers = ["Development Status :: 5 - Production/Stable",
                "License :: OSI Approved :: Apache Software License",
                "Programming Language :: Python",
@@ -14,16 +15,23 @@ classifiers = ["Development Status :: 5 - Production/Stable",
                "Programming Language :: Python :: 3.6",
                "Programming Language :: Python :: Implementation :: PyPy"]
 
-setup(name='timestring',
+setup(name='timestring-iamplus',
       version=version,
       description="Human expressed time to Dates and Ranges",
-      long_description="""Converting strings of into representable time via Date and Range objects.
- Plus features to compare and adjust Dates and Ranges.""",
+      long_description="""
+[Fork and active maintenance of github.com/stevepeak/timestring.]
+
+Converting natural language strings into representable time via
+Date and Range objects and features to compare and adjust
+Dates and Ranges. Dates and Ranges contain datetime compatible
+objects inside them to allow for easy integration into legacy
+code.
+""",
       classifiers=classifiers,
       keywords='date time range datetime datestring',
-      author='@stevepeak',
+      author='@stevepeak, @iamplus (fork)',
       author_email='steve@stevepeak.net',
-      url='http://github.com/stevepeak/timestring',
+      url='http://github.com/iamplus/timestring',
       license='http://www.apache.org/licenses/LICENSE-2.0',
       packages=['timestring'],
       include_package_data=True,
