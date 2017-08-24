@@ -101,6 +101,7 @@ def main():
                                      epilog=""" """)
     parser.add_argument('--version', action='version', version="timestring v%s - http://github.com/stevepeak/timestring" % version)
     parser.add_argument('-d', '--date', action='store_true')
+    parser.add_argument('-z', '--zone', help="Time zone")
     parser.add_argument('--verbose', '-v', action="store_true", help="Verbose mode")
     parser.add_argument('args', nargs="+", help="Time input")
 
@@ -109,9 +110,9 @@ def main():
     else:
         args = parser.parse_args()
         if args.date:
-            print(Date(" ".join(args.args), verbose=args.verbose))
+            print(Date(" ".join(args.args), verbose=args.verbose, tz=args.zone))
         else:
-            print(Range(" ".join(args.args), verbose=args.verbose))
+            print(Range(" ".join(args.args), verbose=args.verbose, tz=args.zone))
 
 if __name__ == '__main__':
     main()
