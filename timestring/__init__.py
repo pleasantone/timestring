@@ -25,10 +25,10 @@ try:
     if psycopg2 is installed then automatically register
     the adapters for Date and Range.
 
-    >>> db.mogrify("insert into my_table (range) values (%s);", 
+    >>> db.mogrify("insert into my_table (range) values (%s);",
                    timestring.Range("next week"))
     "insert into my_table (range) values (tstzrange('2014-03-03 00:00:00'::timestamptz, '2014-03-10 00:00:00'::timestamptz));"
-    """ 
+    """
     from psycopg2.extensions import register_adapter
     from psycopg2.extensions import AsIs
 
