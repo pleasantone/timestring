@@ -15,7 +15,7 @@ classifiers = ["Development Status :: 5 - Production/Stable",
                "Programming Language :: Python :: 3.6",
                "Programming Language :: Python :: Implementation :: PyPy"]
 
-setup(name='timestring-iamplus',
+setup(name='timestring-pleasantone',
       version=version,
       description="Human expressed time to Dates and Ranges",
       long_description="""
@@ -29,9 +29,9 @@ code.
 """,
       classifiers=classifiers,
       keywords='date time range datetime datestring',
-      author='@stevepeak, @iamplus (fork)',
+      author='@stevepeak, @pleasantone (fork)',
       author_email='steve@stevepeak.net',
-      url='http://github.com/iamplus/timestring',
+      url='http://github.com/pleasantone/timestring',
       license='http://www.apache.org/licenses/LICENSE-2.0',
       packages=['timestring'],
       include_package_data=True,
