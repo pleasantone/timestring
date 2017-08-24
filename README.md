@@ -1,10 +1,15 @@
-# timestring [![Build Status](https://secure.travis-ci.org/stevepeak/timestring.png)](http://travis-ci.org/stevepeak/timestring) [![Version](https://pypip.in/v/timestring/badge.png)](https://github.com/stevepeak/timestring) [![codecov.io](https://codecov.io/github/stevepeak/timestring/coverage.svg?branch=master)](https://codecov.io/github/stevepeak/timestring)
+# timestring [![Build Status](https://secure.travis-ci.org/iamplus/timestring.png)](http://travis-ci.org/iamplus/timestring) [![Version](https://pypip.in/v/timestring/badge.png)](https://github.com/iamplus/timestring) [![codecov.io](https://codecov.io/github/iamplus/timestring/coverage.svg?branch=master)](https://codecov.io/github/iamplus/timestring)
 
-Converting strings into usable time objects. The time objects, known as `Date` and `Range` have a number of methods that allow 
-you to easily change and manage your users input dynamically.
+## Origins
+This is a fork of github.com/stevepeak/timestring. The original author
+appears to no longer be maintaining the code.
+
+Converting strings into usable time objects. The time objects, known as
+`Date` and `Range` have a number of methods that allow you to easily
+change and manage your users input dynamically.
 
 ## Install
-`pip install timestring`
+`pip install timestring-iamplus`
 
 
 ## Ranges
@@ -49,7 +54,7 @@ From 01/01/11 00:00:00 to 01/01/12 00:00:00
 
 *Note* you add more years like this `5 years ago` which will be `From 01/01/07 00:00:00 to 01/01/08 00:00:00`
 
-### See examples see the [test file](https://github.com/stevepeak/timestring/blob/master/tests/tests.py)
+### See examples see the [test file](https://github.com/iamplus/timestring/blob/master/tests/tests.py)
 
 More examples / documentation coming soon.
 
