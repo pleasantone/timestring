@@ -146,6 +146,7 @@ class Range(object):
                         end = start - group['main']
 
                 elif group['day_2']:
+                    # Relative day: "today" etc
                     # Week day: "Monday" etc
                     start = Date(group['day_2'], offset=offset, tz=tz)
                     start = start.replace(hour=0, minute=0, second=0)
@@ -153,6 +154,12 @@ class Range(object):
                         start -= '1 week'
                     elif group['ref'] in ['next'] and start.weekday == now.isoweekday():
                         start += '1 week'
+                    end = start + '1 day'
+
+                elif group['day_3']:
+                    # "Day after tomorrow", "Day after yesterday"
+                    start = Date(group['day_3'], offset=offset, tz=tz)
+                    start = start.replace(hour=0, minute=0, second=0)
                     end = start + '1 day'
 
                 elif group.get('month_1'):
