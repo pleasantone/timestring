@@ -10,10 +10,6 @@ from timestring import Range
 
 @freeze_time('2017-06-16 19:37:22')
 class RangeTest(unittest.TestCase):
-    @property
-    def today_start(self):
-        return datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
-
     def assert_range(self, range_str, expected_start: datetime,
                      expected_end: datetime):
         _range = Range(range_str)
@@ -223,34 +219,32 @@ class RangeTest(unittest.TestCase):
 
     def test_relative_day(self):
         self.assert_range('today',
-                          self.today_start,
-                          self.today_start + timedelta(days=1))
+                          datetime(2017, 6, 16),
+                          datetime(2017, 6, 17),)
 
         self.assert_range('tomorrow',
-                          self.today_start + timedelta(days=1),
-                          self.today_start + timedelta(days=2))
+                          datetime(2017, 6, 17),
+                          datetime(2017, 6, 18))
 
         self.assert_range('day after tomorrow',
-                         self.today_start + timedelta(days=2),
-                         self.today_start + timedelta(days=3))
+                          datetime(2017, 6, 18),
+                          datetime(2017, 6, 19))
 
         self.assert_range('yesterday',
-                          self.today_start + timedelta(days=-1),
-                          self.today_start)
+                          datetime(2017, 6, 15),
+                          datetime(2017, 6, 16))
 
         self.assert_range('day before yesterday',
-                         self.today_start + timedelta(days=-2),
-                         self.today_start + timedelta(days=-1))
+                          datetime(2017, 6, 14),
+                          datetime(2017, 6, 15))
 
         self.assert_range('next 2 days',
                           datetime.now(),
                           datetime.now() + timedelta(days=2))
 
-        start = datetime.now() + timedelta(days=-2)
-        end = datetime.now()
         self.assert_range('last 2 days',
-                          start,
-                          end)
+                          datetime.now() - timedelta(days=2),
+                          datetime.now())
 
     def test_relative_weekday_today(self):
         """
