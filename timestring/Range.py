@@ -1,7 +1,7 @@
 import re
 import pytz
 from copy import copy
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from timestring.Date import Date
 from timestring import TimestringInvalid
@@ -33,25 +33,23 @@ class Range(object):
             end = str(end)
 
         if start and end:
-            """start and end provided
-            """
+            # Start and end provided as Dates
             self._dates = (Date(start, tz=tz), Date(end, tz=tz))
 
         elif start == 'infinity':
-            # end was not provided
+            # End was not provided
             self._dates = (Date('infinity'), Date('infinity'))
 
         elif re.search(r'(\s(and|to)\s)', start):
-            """Both sides where provided in the start
-            """
+            # Both sides aer provided in string "start"
             start = re.sub('^(between|from)\s', '', start.lower())
             # Both arguments found in start variable
             r = tuple(re.split(r'(\s(and|to)\s)', start.strip()))
-            self._dates = (Date(r[0], tz=tz), Date(r[-1], tz=tz))
+            start = Range(r[0], tz=tz).start
+            self._dates = (start, Range(r[-1], tz=tz).start)
 
         elif re.match(r"(\[|\()((\"\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(\.\d+)?(\+|\-)\d{2}\")|infinity),((\"\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(\.\d+)?(\+|\-)\d{2}\")|infinity)(\]|\))", start):
-            """postgresql tsrange and tstzranges support
-            """
+            # Postgresql tsrange and tstzranges support
             start, end = tuple(re.sub('[^\w\s\-\:\.\+\,]', '', start).split(','))
             self._dates = (Date(start), Date(end))
 
@@ -68,6 +66,11 @@ class Range(object):
             res = TIMESTRING_RE.search(start)
             if res:
                 group = res.groupdict()
+
+                def g(*keys):
+                    return next((group.get(k) for k in keys
+                                 if group.get(k) is not None),
+                                None)
                 if verbose:
                     print(dict(map(lambda a: (a, group.get(a)), filter(lambda a: group.get(a), group))))
 
@@ -91,7 +94,8 @@ class Range(object):
 
                         # week
                         elif delta.startswith('w'):
-                            start = Date("today", offset=offset, tz=tz) - (str(Date("today", tz=tz).date.weekday())+' days')
+                            d = datetime(now.year, now.month, now.day)
+                            start = Date(d - timedelta(days=d.weekday()))
 
                         # day
                         elif delta.startswith('d'):
@@ -167,7 +171,7 @@ class Range(object):
                         start = Date(start, offset=offset, tz=tz)
                         start = start.replace(hour=0, minute=0, second=0)
                     else:
-                        # A single month of this, previous or next year
+                        # A whole month of this, previous or next year
                         start = Date(group['month_1'], offset=offset, tz=tz)
                         start = start.replace(hour=0, minute=0, second=0)
                         if group['ref'] in ['last', 'prev', 'previous', 'past']:
@@ -176,14 +180,41 @@ class Range(object):
                             start += '1 month'
                     end = start + '1 month'
 
-                elif group.get('year_5'):
-                    # a whole year
+                elif group['date_5'] or group['date_6'] or group['time_2']:
+                    # TODO: Move this code to Date?
+                    year = g('year', 'year_2', 'year_3', 'year_4', 'year_5', 'year_6')
+                    month = g('month', 'month_2', 'month_3', 'month_4', 'month_5')
+                    day = g('date', 'date_2', 'date_3', 'date_4')
+                    hour = g('hour', 'hour_2', 'hour_3')
+                    minute = g('minute', 'minute_2')
+                    second = g('seconds')
+
                     start = Date(start, offset=offset, tz=tz)
-                    start = start.replace(day=1, month=1, hour=0, minute=0, second=0)
-                    end = start + '1 year'
+                    if month is None and year is not None:
+                        start = start.replace(month=1)
+                    if day is None and (month or not (hour or group['daytime'])):
+                        start = start.replace(day=1)
+                    if hour is None and not group['daytime']:
+                        start = start.replace(hour=0)
+                    if minute is None:
+                        start = start.replace(minute=0)
+                    if second is None:
+                        start = start.replace(second=0)
+
+                    if second:
+                        end = start + '1 second'
+                    elif minute:
+                        end = start + '1 minute'
+                    elif hour:
+                        end = start + '1 hour'
+                    elif day:
+                        end = start + '1 day'
+                    elif month:
+                        end = start + '1 month'
+                    elif year is not None:
+                        end = start + '1 year'
 
                 else:
-                    # after all else, we set the end to + 1 day
                     start = Date(start, offset=offset, tz=tz)
                     end = start + '1 day'
 
@@ -193,6 +224,8 @@ class Range(object):
 
             if end is None:
                 # no end provided, so assume 24 hours
+                if isinstance(start, str):
+                    start = Date(start)
                 end = start + '24 hours'
 
             if start > end:

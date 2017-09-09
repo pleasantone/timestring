@@ -33,7 +33,7 @@ TIMESTRING_RE = re.compile(re.sub('[\t\n\s]', '', re.sub('(\(\?\#[^\)]+\))', '',
                         |
 
                         (?# =-=-=-= Matches Y-M-D, M-D-Y, D-M-Y, Y-D-M ex. "january 5, 2012", "january 5th, '12", "jan 5th 2012", "5 December, 2016" =-=-=-= )
-                        (
+                        (?P<date_5>
                             ((?P<year_6>(([12][089]\d{2})|('\d{2})))?([\/\-\s]+)?)
                             (
                                 ((?P<date_4>(\d{1,2})(?!\d))(th|nd|st|rd)?([\/\-\s]+)?)
@@ -50,7 +50,7 @@ TIMESTRING_RE = re.compile(re.sub('[\t\n\s]', '', re.sub('(\(\?\#[^\)]+\))', '',
                         |
 
                         (?# =-=-=-= Matches "2012/12/11", "2013-09-10T", "5/23/2012", "05/2012", "2012" =-=-=-= )
-                        (
+                        (?P<date_6>
                             ((?P<year_3>[12][089]\d{2})[/-](?P<month_3>[01]?\d)([/-](?P<date_3>[0-3]?\d))?)T?
                                 |
                             ((?P<month_2>[01]?\d)[/-](?P<date_2>[0-3]?\d)[/-](?P<year_2>(([12][089]\d{2})|(\d{2}))))
@@ -63,7 +63,7 @@ TIMESTRING_RE = re.compile(re.sub('[\t\n\s]', '', re.sub('(\(\?\#[^\)]+\))', '',
                         |
 
                         (?# =-=-=-= Matches "01:20", "6:35 pm", "7am", "noon" =-=-=-= )
-                        (
+                        (?P<time_2>
                             ((?P<hour>[012]?[0-9]):(?P<minute>[0-5]\d)\s*(?P<am>am|pm|p|a))
                                 |
                             ((?P<hour_2>[012]?[0-9]):(?P<minute_2>[0-5]\d)(:(?P<seconds>[0-5]\d))?)
