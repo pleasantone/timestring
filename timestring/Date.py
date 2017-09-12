@@ -17,6 +17,18 @@ except NameError:
     long = int
 
 CLEAN_NUMBER = re.compile(r"[\D]")
+MONTH_ORDINALS = dict(
+    january=1, february=2, march=3, april=4, june=6,
+    july=7, august=8, september=9, october=10, november=11, december=12,
+    jan=1, feb=2, mar=3, apr=4, may=5, jun=6,
+    jul=7, aug=8, sep=9, sept=9, oct=10, nov=11, dec=12,
+)
+WEEKDAY_ORDINALS = dict(
+    monday=1, tuesday=2, wednesday=3, thursday=4, friday=5, saturday=6, sunday=7,
+    mon=1, tue=2, tues=2, wed=3, wedn=3, thu=4, thur=4, fri=5, sat=6, sun=7,
+    mo=1, tu=2, we=3, th=4, fr=5, sa=6, su=7,
+)
+
 
 class Date(object):
     def __init__(self, date, offset=None, start_of_week=None, tz=None, verbose=False):
@@ -57,7 +69,8 @@ class Date(object):
 
             if isinstance(date, dict):
                 # Initial date.
-                new_date = get_timezone_time(tz)#datetime(*time.localtime()[:3])
+                now = get_timezone_time(tz)#datetime(*time.localtime()[:3])
+                new_date = copy(now)
 
                 if date.get('unixtime'):
                     new_date = datetime.fromtimestamp(int(date.get('unixtime')))
@@ -112,23 +125,24 @@ class Date(object):
                     else:
                         new_date = new_date - timedelta(**{('days' if delta.startswith('d') else 'hours' if delta.startswith('h') else 'minutes' if delta.startswith('m') else 'seconds'): i})
 
+                ref = date.get('ref')
                 # !dow
-                if [date.get(key) for key in ('day', 'day_2', 'day_3') if date.get(key)]:
-                    dow = max([date.get(key) for key in ('day', 'day_2', 'day_3') if date.get(key)])
-                    iso = dict(monday=1, tuesday=2, wednesday=3, thursday=4, friday=5, saturday=6, sunday=7, mon=1, tue=2, tues=2, wed=3, wedn=3, thu=4, thur=4, fri=5, sat=6, sun=7).get(dow)
+                dow = next((date.get(key) for key in ('day', 'day_2', 'day_3')
+                           if date.get(key)),
+                          None)
+                if dow is not None:
+                    new_date.replace(hour=0, minute=0, second=0, microsecond=0)
+                    iso = WEEKDAY_ORDINALS.get(dow)
                     if iso:
-                        # determin which direction
-                        ref =  date.get('ref')
+                        # Determine direction
                         if ref in ['next', 'upcoming']:
                             days = iso - new_date.isoweekday() + (7 if iso <= new_date.isoweekday() else 0)
                         elif ref in ['last', 'previous', 'prev']:
                             days = iso - new_date.isoweekday() - (7 if iso >= new_date.isoweekday() else 0)
                         else:
                             days = iso - new_date.isoweekday() + (7 if iso < new_date.isoweekday() else 0)
-
                         new_date = new_date + timedelta(days=days)
                     else:
-                        new_date.replace(hour=0, minute=0, second=0, microsecond=0)
                         if dow == 'yesterday':
                             new_date = new_date - timedelta(days=1)
                         elif dow == 'tomorrow':
@@ -141,20 +155,24 @@ class Date(object):
                 # !year
                 year = [int(CLEAN_NUMBER.sub('', date[key])) for key in ('year', 'year_2', 'year_3', 'year_4', 'year_5', 'year_6') if date.get(key)]
                 if year:
+                    if ref:
+                        TimestringInvalid('"next" %s'% year)
                     year = max(year)
                     if len(str(year)) != 4:
                         year += 2000 if year <= 40 else 1900
                     new_date = new_date.replace(year=year)
 
+
                 # !month
                 month = [date.get(key) for key in ('month', 'month_1', 'month_2', 'month_3', 'month_4', 'month_5') if date.get(key)]
                 if month:
                     month_ = max(month)
-                    if re.match('^\d+$', month_):
+                    if month_.isdigit():
                         month_ord = int(month_)
+                        if not 1 <= month_ord <= 12:
+                            raise TimestringInvalid('Month not in range 1..12:' + month_)
                     else:
                         month_ord = MONTH_ORDINALS.get(month_, new_date.month)
-
                     new_date = new_date.replace(month=int(month_ord))
                     if ref in ['next', 'upcoming']:
                         if month_ord <= now.month:
@@ -168,11 +186,14 @@ class Date(object):
                 # !day
                 day = [date.get(key) for key in ('date', 'date_2', 'date_3', 'date_4') if date.get(key)]
                 if day:
+                    if ref:
+                        TimestringInvalid('"next" %s'% day)
                     new_date = new_date.replace(day=int(max(day)))
 
                 # !daytime
-                if date.get('daytime'):
-                    if date['daytime'].find('this time') >= 1:
+                daytime = date.get('daytime')
+                if daytime:
+                    if daytime.find('this time') >= 1:
                         current_time = get_timezone_time(tz)
                         new_date = new_date.replace(hour= current_time.hour,
                                                     minute=current_time.minute)
@@ -180,6 +201,7 @@ class Date(object):
                         new_date = new_date.replace(hour=dict(morning=9, noon=12, afternoon=15, evening=18, night=21, nighttime=21, midnight=24).get(date.get('daytime'), 12))
                     # No offset because the hour was set.
                     offset = False
+
 
                 # !hour
                 hour = [date.get(key) for key in ('hour', 'hour_2', 'hour_3') if date.get(key)]
