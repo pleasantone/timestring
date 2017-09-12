@@ -5,6 +5,8 @@ from ddt import ddt, data
 from six import u
 from datetime import datetime, timedelta
 
+from freezegun import freeze_time
+
 from timestring import Date
 from timestring import Range
 from timestring import parse
@@ -12,8 +14,18 @@ from timestring.text2num import text2num
 from timestring.timestring_re import TIMESTRING_RE as ts
 
 
+@freeze_time('2017-06-16 19:37:22')
 @ddt
 class timestringTests(unittest.TestCase):
+    def assert_date(self, date_str, expected: datetime):
+        actual = Date(date_str)
+
+        self.assertEqual(actual,
+                         expected,
+                         '\n    Text: ' + date_str
+                         + '\nExpected: ' + str(expected)
+                         + '\n  Actual: ' + str(actual))
+
     def test_fullstring(self):
         now = datetime.now()
 
@@ -432,6 +444,51 @@ class timestringTests(unittest.TestCase):
         self.assertNotEqual(res, None)
         res = ts.search("23rd feb 9:35pm")
         self.assertNotEqual(res, None)
+
+    def test_next_prev(self):
+        # Past month
+        self.assert_date('nov', datetime(2017, 11, 1))
+        self.assert_date('this nov', datetime(2017, 11, 1))
+        self.assert_date('last nov', datetime(2016, 11, 1))
+        self.assert_date('previous nov', datetime(2016, 11, 1))
+        self.assert_date('next nov', datetime(2017, 11, 1))
+        self.assert_date('upcoming nov', datetime(2017, 11, 1))
+
+        # Future month
+        self.assert_date('feb', datetime(2018, 2, 1))
+        self.assert_date('this feb', datetime(2018, 2, 1), )
+        self.assert_date('last feb', datetime(2017, 2, 1))
+        self.assert_date('previous feb', datetime(2017, 2, 1))
+        self.assert_date('next feb', datetime(2018, 2, 1))
+        self.assert_date('upcoming feb', datetime(2018, 2, 1))
+
+        # Current month
+        self.assert_date('june', datetime(2017, 6, 1))
+        self.assert_date('this june', datetime(2017, 6, 1))
+        self.assert_date('last june', datetime(2016, 6, 1))
+        self.assert_date('next june', datetime(2018, 6, 1))
+
+        # Past weekday
+        self.assert_date('sun', datetime(2017, 6, 18))
+        self.assert_date('this sun', datetime(2017, 6, 18))
+        self.assert_date('last sun', datetime(2017, 6, 11))
+        self.assert_date('previous sun', datetime(2017, 6, 11))
+        self.assert_date('next sun', datetime(2017, 6, 18))
+        self.assert_date('upcoming sun', datetime(2017, 6, 18))
+
+        # Future weekday
+        self.assert_date('wed', datetime(2017, 6, 21))
+        self.assert_date('last wed', datetime(2017, 6, 14))
+        self.assert_date('previous wed', datetime(2017, 6, 14))
+        self.assert_date('next wed', datetime(2017, 6, 21))
+        self.assert_date('upcoming wed', datetime(2017, 6, 21))
+
+        # Current weekday
+        self.assert_date('fri', datetime(2017, 6, 16))
+        self.assert_date('this fri', datetime(2017, 6, 16))
+        self.assert_date('last fri', datetime(2017, 6, 9))
+        self.assert_date('next fri', datetime(2017, 6, 23))
+
 
 def main():
     os.environ['TZ'] = 'UTC'
