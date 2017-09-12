@@ -5,14 +5,14 @@ import unittest
 
 from freezegun import freeze_time
 
-from timestring import Range
+from timestring.Range import Range, CONTEXT_FUTURE, CONTEXT_PAST
 
 
 @freeze_time('2017-06-16 19:37:22')
 class RangeTest(unittest.TestCase):
     def assert_range(self, range_str, expected_start: datetime,
-                     expected_end: datetime):
-        _range = Range(range_str)
+                     expected_end: datetime, context=None):
+        _range = Range(range_str, context=context)
 
         self.assertEqual(_range.start,
                          expected_start,
@@ -103,6 +103,69 @@ class RangeTest(unittest.TestCase):
                           datetime(2017,  6,  16, 11,  0,  0),
                           datetime(2017,  6,  16, 12,  0,  0))
 
+
+    def test_context(self):
+        self.assert_range('2017',
+                          datetime(2017,  1,  1),
+                          datetime.now(),
+                          context=CONTEXT_PAST)
+
+        self.assert_range('2017',
+                          datetime.now(),
+                          datetime(2018,  1,  1),
+                          context=CONTEXT_FUTURE)
+
+        self.assert_range('june',
+                          datetime(2017, 6,  1),
+                          datetime.now(),
+                          context=CONTEXT_PAST)
+
+        self.assert_range('june',
+                          datetime.now(),
+                          datetime(2017, 7,  1),
+                          context=CONTEXT_FUTURE)
+
+        self.assert_range('2017 june',
+                          datetime(2017, 6, 1),
+                          datetime.now(),
+                          context=CONTEXT_PAST)
+
+        self.assert_range('2017 june',
+                          datetime.now(),
+                          datetime(2017, 7, 1),
+                          context=CONTEXT_FUTURE)
+
+        self.assert_range('2000',
+                          datetime(2000,  1,  1),
+                          datetime(2001,  1, 1),
+                          context=CONTEXT_PAST)
+
+        self.assert_range('2000',
+                          datetime(2000,  1,  1),
+                          datetime(2001,  1, 1),
+                          context=CONTEXT_FUTURE)
+
+        self.assert_range('may',
+                          datetime(2017, 5,  1),
+                          datetime(2017, 6,  1),
+                          context=CONTEXT_PAST)
+
+        self.assert_range('may',
+                          datetime(2017, 5,  1),
+                          datetime(2017, 6,  1),
+                          context=CONTEXT_FUTURE)
+
+        self.assert_range('2017 may',
+                          datetime(2017, 5,  1),
+                          datetime(2017, 6,  1),
+                          context=CONTEXT_PAST)
+
+        self.assert_range('2017 may',
+                          datetime(2017, 5,  1),
+                          datetime(2017, 6,  1),
+                          context=CONTEXT_FUTURE)
+
+
     def test_implicit_date_change(self):
         # Date change between start and end
         self.assert_range('11p',
@@ -159,6 +222,16 @@ class RangeTest(unittest.TestCase):
                           datetime(2017, 1, 1, 0, 0, 0),
                           datetime(2018, 1, 1, 0, 0, 0))
 
+        self.assert_range('this year',
+                          datetime(2017, 1, 1, 0, 0, 0),
+                          datetime.now(),
+                          context=CONTEXT_PAST)
+
+        self.assert_range('this year',
+                          datetime.now(),
+                          datetime(2018, 1, 1, 0, 0, 0),
+                          context=CONTEXT_FUTURE)
+
         self.assert_range('last year',
                           datetime(2016, 1, 1, 0, 0, 0),
                           datetime(2017, 1, 1, 0, 0, 0))
@@ -175,6 +248,16 @@ class RangeTest(unittest.TestCase):
         self.assert_range('current month',
                           datetime(2017, 6, 1, 0, 0, 0),
                           datetime(2017, 7, 1, 0, 0, 0))
+
+        self.assert_range('this month',
+                          datetime(2017, 6, 1, 0, 0, 0),
+                          datetime.now(),
+                          context=CONTEXT_PAST)
+
+        self.assert_range('this month',
+                          datetime.now(),
+                          datetime(2017, 7, 1, 0, 0, 0),
+                          context=CONTEXT_FUTURE)
 
         self.assert_range('next month',
                           datetime(2017, 7, 1, 0, 0, 0),
@@ -209,9 +292,19 @@ class RangeTest(unittest.TestCase):
                           datetime(2017, 6, 12),
                           datetime(2017, 6, 19))
 
+        self.assert_range('this week',
+                          datetime(2017, 6, 12),
+                          datetime.now(),
+                          context=CONTEXT_PAST)
+
+        self.assert_range('this week',
+                          datetime.now(),
+                          datetime(2017, 6, 19),
+                          context=CONTEXT_FUTURE)
+
         self.assert_range('last week',
                           datetime(2017, 6, 5),
-                          datetime(2017, 6, 12))
+                          datetime(2017, 6, 12),)
 
         self.assert_range('next week',
                           datetime(2017, 6, 19),
@@ -221,6 +314,16 @@ class RangeTest(unittest.TestCase):
         self.assert_range('today',
                           datetime(2017, 6, 16),
                           datetime(2017, 6, 17),)
+
+        self.assert_range('today',
+                          datetime(2017, 6, 16),
+                          datetime.now(),
+                          context=CONTEXT_PAST)
+
+        self.assert_range('today',
+                          datetime.now(),
+                          datetime(2017, 6, 17),
+                          context=CONTEXT_FUTURE)
 
         self.assert_range('tomorrow',
                           datetime(2017, 6, 17),
@@ -262,6 +365,16 @@ class RangeTest(unittest.TestCase):
         self.assert_range('this ' + weekday,
                           datetime(2017, 6, 16),
                           datetime(2017, 6, 17))
+
+        self.assert_range(weekday,
+                          datetime(2017, 6, 16),
+                          datetime.now(),
+                          context=CONTEXT_PAST)
+
+        self.assert_range(weekday,
+                          datetime.now(),
+                          datetime(2017, 6, 17),
+                          context=CONTEXT_FUTURE)
 
         self.assert_range('next ' + weekday,
                           datetime(2017, 6, 23),
@@ -315,6 +428,7 @@ class RangeTest(unittest.TestCase):
         self.assert_range('next 4 hours',
                           datetime(2017, 6, 16, 19, 37, 22),
                           datetime(2017, 6, 16, 23, 37, 22))
+
 
 
 def main():
