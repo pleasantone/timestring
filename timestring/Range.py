@@ -14,9 +14,14 @@ except NameError:
     unicode = str
     long = int
 
+TENSE_FUTURE = 1
+TENSE_PAST = -1
+TENSE_NEUTRAL = 0
+
 
 class Range(object):
-    def __init__(self, start, end=None, offset=None, start_of_week=0, tz=None, verbose=False):
+    def __init__(self, start, end=None, offset=None, start_of_week=0, tz=None,
+                 verbose=False, tense=TENSE_NEUTRAL):
         """`start` can be type <class timestring.Date> or <type str>
         """
         self._dates = []
@@ -158,6 +163,7 @@ class Range(object):
                         start -= '1 week'
                     elif group['ref'] in ['next'] and start.weekday == now.isoweekday():
                         start += '1 week'
+                    elif 
                     end = start + '1 day'
 
                 elif group['day_3']:
