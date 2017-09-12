@@ -5,7 +5,7 @@ import unittest
 
 from freezegun import freeze_time
 
-from timestring.Range import Range, CONTEXT_FUTURE, CONTEXT_PAST
+from timestring.Range import Range, CONTEXT_PAST, CONTEXT_FUTURE
 
 
 @freeze_time('2017-06-16 19:37:22')
@@ -104,26 +104,26 @@ class RangeTest(unittest.TestCase):
                           datetime(2017,  6,  16, 12,  0,  0))
 
 
-    def test_context(self):
+    def test_context_past_future(self):
         # Current period
         self.assert_range('2017',
-                          datetime(2017,  1,  1),
+                          datetime(2017, 1, 1),
                           datetime.now(),
                           context=CONTEXT_PAST)
 
         self.assert_range('2017',
                           datetime.now(),
-                          datetime(2018,  1,  1),
+                          datetime(2018, 1, 1),
                           context=CONTEXT_FUTURE)
 
         self.assert_range('june',
-                          datetime(2017, 6,  1),
+                          datetime(2017, 6, 1),
                           datetime.now(),
                           context=CONTEXT_PAST)
 
         self.assert_range('june',
                           datetime.now(),
-                          datetime(2017, 7,  1),
+                          datetime(2017, 7, 1),
                           context=CONTEXT_FUTURE)
 
         self.assert_range('2017 june',
@@ -138,66 +138,65 @@ class RangeTest(unittest.TestCase):
 
         # A past period - no effect
         self.assert_range('2000',
-                          datetime(2000,  1,  1),
-                          datetime(2001,  1, 1),
+                          datetime(2000, 1, 1),
+                          datetime(2001, 1, 1),
                           context=CONTEXT_PAST)
 
         self.assert_range('2000',
-                          datetime(2000,  1,  1),
-                          datetime(2001,  1, 1),
+                          datetime(2000, 1, 1),
+                          datetime(2001, 1, 1),
                           context=CONTEXT_FUTURE)
 
         self.assert_range('may',
-                          datetime(2017, 5,  1),
-                          datetime(2017, 6,  1),
+                          datetime(2017, 5, 1),
+                          datetime(2017, 6, 1),
                           context=CONTEXT_PAST)
 
         self.assert_range('may',
-                          datetime(2017, 5,  1),
-                          datetime(2017, 6,  1),
+                          datetime(2017, 5, 1),
+                          datetime(2017, 6, 1),
                           context=CONTEXT_FUTURE)
 
         self.assert_range('2017 may',
-                          datetime(2017, 5,  1),
-                          datetime(2017, 6,  1),
+                          datetime(2017, 5, 1),
+                          datetime(2017, 6, 1),
                           context=CONTEXT_PAST)
 
         self.assert_range('2017 may',
-                          datetime(2017, 5,  1),
-                          datetime(2017, 6,  1),
+                          datetime(2017, 5, 1),
+                          datetime(2017, 6, 1),
                           context=CONTEXT_FUTURE)
 
         # A future period - no effect
         self.assert_range('2018',
-                          datetime(2018,  1,  1),
-                          datetime(2019,  1, 1),
+                          datetime(2018, 1, 1),
+                          datetime(2019, 1, 1),
                           context=CONTEXT_PAST)
 
         self.assert_range('2018',
-                          datetime(2018,  1,  1),
-                          datetime(2019,  1, 1),
+                          datetime(2018, 1, 1),
+                          datetime(2019, 1, 1),
                           context=CONTEXT_FUTURE)
 
         self.assert_range('july',
-                          datetime(2017, 7,  1),
-                          datetime(2017, 8,  1),
+                          datetime(2017, 7, 1),
+                          datetime(2017, 8, 1),
                           context=CONTEXT_PAST)
 
         self.assert_range('july',
-                          datetime(2017, 7,  1),
-                          datetime(2017, 8,  1),
+                          datetime(2017, 7, 1),
+                          datetime(2017, 8, 1),
                           context=CONTEXT_FUTURE)
 
         self.assert_range('2017 july',
-                          datetime(2017, 7,  1),
-                          datetime(2017, 8,  1),
+                          datetime(2017, 7, 1),
+                          datetime(2017, 8, 1),
                           context=CONTEXT_PAST)
 
         self.assert_range('2017 july',
-                          datetime(2017, 7,  1),
-                          datetime(2017, 8,  1),
+                          datetime(2017, 7, 1),
+                          datetime(2017, 8, 1),
                           context=CONTEXT_FUTURE)
-
 
     def test_implicit_date_change(self):
         # Date change between start and end
