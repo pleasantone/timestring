@@ -41,7 +41,7 @@ class Range(object):
             self._dates = (Date('infinity'), Date('infinity'))
 
         elif re.search(r'(\s(and|to)\s)', start):
-            # Both sides aer provided in string "start"
+            # Both sides are provided in string "start"
             start = re.sub('^(between|from)\s', '', start.lower())
             # Both arguments found in start variable
             r = tuple(re.split(r'(\s(and|to)\s)', start.strip()))
