@@ -105,6 +105,7 @@ class RangeTest(unittest.TestCase):
 
 
     def test_context(self):
+        # Current period
         self.assert_range('2017',
                           datetime(2017,  1,  1),
                           datetime.now(),
@@ -135,6 +136,7 @@ class RangeTest(unittest.TestCase):
                           datetime(2017, 7, 1),
                           context=CONTEXT_FUTURE)
 
+        # A past period - no effect
         self.assert_range('2000',
                           datetime(2000,  1,  1),
                           datetime(2001,  1, 1),
@@ -163,6 +165,37 @@ class RangeTest(unittest.TestCase):
         self.assert_range('2017 may',
                           datetime(2017, 5,  1),
                           datetime(2017, 6,  1),
+                          context=CONTEXT_FUTURE)
+
+        # A future period - no effect
+        self.assert_range('2018',
+                          datetime(2018,  1,  1),
+                          datetime(2019,  1, 1),
+                          context=CONTEXT_PAST)
+
+        self.assert_range('2018',
+                          datetime(2018,  1,  1),
+                          datetime(2019,  1, 1),
+                          context=CONTEXT_FUTURE)
+
+        self.assert_range('july',
+                          datetime(2017, 7,  1),
+                          datetime(2017, 8,  1),
+                          context=CONTEXT_PAST)
+
+        self.assert_range('july',
+                          datetime(2017, 7,  1),
+                          datetime(2017, 8,  1),
+                          context=CONTEXT_FUTURE)
+
+        self.assert_range('2017 july',
+                          datetime(2017, 7,  1),
+                          datetime(2017, 8,  1),
+                          context=CONTEXT_PAST)
+
+        self.assert_range('2017 july',
+                          datetime(2017, 7,  1),
+                          datetime(2017, 8,  1),
                           context=CONTEXT_FUTURE)
 
 
