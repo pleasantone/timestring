@@ -156,7 +156,7 @@ class Range(object):
                     start = start.replace(hour=0, minute=0, second=0)
                     if group['ref'] in ['last', 'prev', 'previous']:
                         start -= '1 week'
-                    elif group['ref'] in ['next'] and start.weekday == now.isoweekday():
+                    elif group['ref'] in ['next', 'upcoming'] and start.weekday == now.isoweekday():
                         start += '1 week'
                     end = start + '1 day'
 
