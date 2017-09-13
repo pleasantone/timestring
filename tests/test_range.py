@@ -13,7 +13,6 @@ class RangeTest(unittest.TestCase):
     def assert_range(self, range_str, expected_start: datetime,
                      expected_end: datetime):
         _range = Range(range_str)
-
         self.assertEqual(_range.start,
                          expected_start,
                         '\n          Text: ' + range_str
@@ -34,7 +33,7 @@ class RangeTest(unittest.TestCase):
             'sep 5 2012',
             'sept 5 2012',
             "sep 5th, '12",
-            '5th September, 2012'
+            '5th September, 2012',
             #TODO: 5th of September, 2012
             '2012/9/5',
             '2012-09-5T',
@@ -110,11 +109,11 @@ class RangeTest(unittest.TestCase):
                           datetime(2017, 6, 17, 0, 0, 0))
 
         self.assert_range('11:59pm on Feb 28',
-                          datetime(2017, 2, 28, 23, 59, 0),
-                          datetime(2017, 3, 1, 0, 0, 0))
+                          datetime(2018, 2, 28, 23, 59, 0),
+                          datetime(2018, 3, 1, 0, 0, 0))
 
-        self.assert_range('11pm on dec 31',
-                          datetime(2017, 12, 31, 23, 0, 0),
+        self.assert_range('11:59pm on dec 31',
+                          datetime(2017, 12, 31, 23, 59, 0),
                           datetime(2018, 1, 1, 0, 0, 0))
 
     def test_explicit_end(self):
@@ -127,12 +126,12 @@ class RangeTest(unittest.TestCase):
                           datetime(2010, 1, 12))
 
         self.assert_range('january 10 to jan 12',
-                          datetime(2017, 1, 10),
-                          datetime(2017, 1, 12))
+                          datetime(2018, 1, 10),
+                          datetime(2018, 1, 12))
 
         self.assert_range('between january 10 and jan 12',
-                          datetime(2017, 1, 10),
-                          datetime(2017, 1, 12))
+                          datetime(2018, 1, 10),
+                          datetime(2018, 1, 12))
 
         self.assert_range('10am to 11pm',
                           datetime(2017, 6, 16, 10),

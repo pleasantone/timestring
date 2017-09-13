@@ -168,9 +168,10 @@ class Date(object):
                 if month:
                     month_ = max(month)
                     if re.match('^\d+$', month_):
-                        month_ord = month_
+                        month_ord = int(month_)
                     else:
                         month_ord = MONTH_ORDINALS.get(month_, new_date.month)
+
                     new_date = new_date.replace(month=int(month_ord))
                     if ref in ['next', 'upcoming']:
                         if month_ord <= now.month:
@@ -178,7 +179,7 @@ class Date(object):
                     elif ref in ['last', 'previous', 'prev']:
                         if month_ord >= now.month:
                             new_date = new_date.replace(year=new_date.year - 1)
-                    elif month_ord < now.month:
+                    elif month_ord < now.month and not year:
                         new_date = new_date.replace(year=new_date.year + 1)
 
                 # !day
@@ -199,7 +200,6 @@ class Date(object):
                         new_date = new_date.replace(hour=dict(morning=9, noon=12, afternoon=15, evening=18, night=21, nighttime=21, midnight=24).get(date.get('daytime'), 12))
                     # No offset because the hour was set.
                     offset = False
-
 
                 # !hour
                 hour = [date.get(key) for key in ('hour', 'hour_2', 'hour_3') if date.get(key)]
@@ -223,7 +223,7 @@ class Date(object):
                     if seconds:
                         new_date = new_date.replace(second=int(seconds))
 
-                if dow is None and day == []:
+                if dow is None and not (day or hour):
                     new_date = new_date.replace(day=1)
                 if hour == [] and daytime is None:
                     new_date = new_date.replace(hour=0, minute=0, second=0)
