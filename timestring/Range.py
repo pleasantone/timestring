@@ -180,7 +180,6 @@ class Range(object):
                         start = start.replace(hour=0, minute=0, second=0)
                         if group['ref'] in ['last', 'prev', 'previous', 'past']:
                             start -= '1 year'
-                            print(start)
                         elif group['ref'] in ['next', 'upcoming'] and start.weekday == now.weekday:
                             start += '1 year'
                     end = start + '1 month'
