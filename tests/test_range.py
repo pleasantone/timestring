@@ -267,7 +267,15 @@ class RangeTest(unittest.TestCase):
                           datetime(2017, 6, 23),
                           datetime(2017, 6, 24))
 
+        self.assert_range('upcoming ' + weekday,
+                          datetime(2017, 6, 23),
+                          datetime(2017, 6, 24))
+
         self.assert_range('last ' + weekday,
+                          datetime(2017, 6, 9),
+                          datetime(2017, 6, 10))
+
+        self.assert_range('previous ' + weekday,
                           datetime(2017, 6, 9),
                           datetime(2017, 6, 10))
 
