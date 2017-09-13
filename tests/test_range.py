@@ -11,7 +11,6 @@ from timestring.Range import Range, CONTEXT_PAST, CONTEXT_FUTURE
 @freeze_time('2017-06-16 19:37:22')
 class RangeTest(unittest.TestCase):
     def assert_range(self, range_str, expected_start: datetime,
-                     expected_end: datetime):
                      expected_end: datetime, context=None):
         _range = Range(range_str, context=context)
 
@@ -105,7 +104,7 @@ class RangeTest(unittest.TestCase):
                           datetime(2017,  6,  16, 12,  0,  0))
 
 
-    def test_context_past_future(self):
+    def test_context(self):
         # Current period
         self.assert_range('2017',
                           datetime(2017, 1, 1),
@@ -148,12 +147,12 @@ class RangeTest(unittest.TestCase):
                           datetime(2001, 1, 1),
                           context=CONTEXT_FUTURE)
 
-        self.assert_range('may',
+        self.assert_range('last may',
                           datetime(2017, 5, 1),
                           datetime(2017, 6, 1),
                           context=CONTEXT_PAST)
 
-        self.assert_range('may',
+        self.assert_range('last may',
                           datetime(2017, 5, 1),
                           datetime(2017, 6, 1),
                           context=CONTEXT_FUTURE)

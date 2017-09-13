@@ -179,9 +179,10 @@ class Range(object):
                         start = Date(group['month_1'], offset=offset, tz=tz)
                         start = start.replace(hour=0, minute=0, second=0)
                         if group['ref'] in ['last', 'prev', 'previous', 'past']:
-                            start -= '1 month'
+                            start -= '1 year'
+                            print(start)
                         elif group['ref'] in ['next', 'upcoming'] and start.weekday == now.weekday:
-                            start += '1 month'
+                            start += '1 year'
                     end = start + '1 month'
 
                 elif group['date_5'] or group['date_6'] or group['time_2']:
