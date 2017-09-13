@@ -14,9 +14,13 @@ except NameError:
     unicode = str
     long = int
 
+CONTEXT_PAST = -1
+CONTEXT_FUTURE = 1
+
 
 class Range(object):
-    def __init__(self, start, end=None, offset=None, start_of_week=0, tz=None, verbose=False):
+    def __init__(self, start, end=None, offset=None, start_of_week=0, tz=None,
+                 verbose=False, context=None):
         """`start` can be type <class timestring.Date> or <type str>
         """
         self._dates = []
@@ -218,6 +222,11 @@ class Range(object):
                     start = Date(start, offset=offset, tz=tz)
                     end = start + '1 day'
 
+                if start <= now <= end:
+                    if context == CONTEXT_PAST:
+                        end = now
+                    elif context == CONTEXT_FUTURE:
+                        start = now
             else:
                 raise TimestringInvalid("Invalid timestring request")
 
