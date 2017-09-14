@@ -6,10 +6,9 @@ from six import u
 from datetime import datetime, timedelta
 
 from freezegun import freeze_time
+import pytest
 
-from timestring import Date
-from timestring import Range
-from timestring import parse
+from timestring import Date, Range, parse, TimestringInvalid
 from timestring.text2num import text2num
 from timestring.timestring_re import TIMESTRING_RE as ts
 
@@ -62,11 +61,11 @@ class timestringTests(unittest.TestCase):
         self.assertEqual(r.end.minute, 1)
 
         _range = Range("between january 15th at 3 am and august 5th 5pm")
-        self.assertEqual(_range[0].year, now.year)
+        self.assertEqual(_range[0].year, 2018)
         self.assertEqual(_range[0].month, 1)
         self.assertEqual(_range[0].day, 15)
         self.assertEqual(_range[0].hour, 3)
-        self.assertEqual(_range[1].year, now.year)
+        self.assertEqual(_range[1].year, 2017)
         self.assertEqual(_range[1].month, 8)
         self.assertEqual(_range[1].day, 5)
         self.assertEqual(_range[1].hour, 17)
@@ -169,6 +168,14 @@ class timestringTests(unittest.TestCase):
         # offset timezones
         self.assertEqual(Date("2014-03-06 15:33:43.764419-05").hour, 20)
 
+        for date in ['yestserday', 'Satruday', Exception]:
+            with pytest.raises(TimestringInvalid, message=str(date)):
+                Date(date)
+
+            with pytest.raises(TimestringInvalid, message=str(date)):
+                Range(date)
+
+
     def test_this(self):
         now = datetime.now()
 
@@ -235,7 +242,7 @@ class timestringTests(unittest.TestCase):
     def test_dow(self):
         now = datetime.now()
         hour_in_seconds = 24 * 60 * 60
-        for x, day in enumerate(('monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday')):
+        for x, day in enumerate(('monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'Saturday', 'sunday')):
             d, r = Date(day), Range(day)
             self.assertLess(d.date - now, timedelta(7))
             self.assertEqual(d.weekday, 1 + x)
@@ -305,8 +312,8 @@ class timestringTests(unittest.TestCase):
         self.assertEqual(Date(date_1) - '5 days', date_2)
 
     def test_compare(self):
-        self.assertFalse(Range('10 days') == Date('yestserday'))
-        self.assertTrue(Date('yestserday') in Range('10 days'))
+        self.assertFalse(Range('10 days') == Date('yesterday'))
+        self.assertTrue(Date('yesterday') in Range('10 days'))
         self.assertTrue(Range('10 days') in Range('100 days'))
         self.assertTrue(Range('next 2 weeks') > Range('1 year'))
         self.assertTrue(Range('yesterday') < Range('now'))
@@ -328,7 +335,6 @@ class timestringTests(unittest.TestCase):
         self.assertTrue(Date('today') not in year)
 
         self.assertTrue(Date('last tuesday') in Range('last 14 days'))
-        self.assertTrue(Date('tuesday') in Range('next 7 days'))
         self.assertTrue(Date('tuesday') in Range('next 7 days'))
         self.assertTrue(Date('next tuesday') in Range('next 14 days'))
 

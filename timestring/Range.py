@@ -86,44 +86,8 @@ class Range(object):
                     # make delta
                     di = "%s %s" % (str(int(group['num'] or 1)), delta)
 
-                    # this                             [   x  ]
-                    if group['ref'] in ['this', 'current']:
-
-                        if delta.startswith('y'):
-                            start = Date(datetime(now.year, 1, 1), offset=offset, tz=tz)
-
-                        # month
-                        elif delta.startswith('mo'):
-                            start = Date(datetime(now.year, now.month, 1), offset=offset, tz=tz)
-
-                        # week
-                        elif delta.startswith('w'):
-                            d = datetime(now.year, now.month, now.day)
-                            start = Date(d - timedelta(days=d.weekday()))
-
-                        # day
-                        elif delta.startswith('d'):
-                            start = Date("today", offset=offset, tz=tz)
-
-                        # hour
-                        elif delta.startswith('h'):
-                            start = Date("today", offset=dict(hour=now.hour), tz=tz)
-
-                        # minute
-                        elif delta.startswith('m'):
-                            start = Date('now', offset=dict(minute=now.minute), tz=tz)
-
-                        # second
-                        elif delta.startswith('s'):
-                            start = Date("now", tz=tz)
-
-                        else:
-                            raise TimestringInvalid("Not a valid time reference")
-
-                        end = start + di
-
                     # "next 2 weeks", "the next hour"   x[     ][     ]
-                    elif group['ref'] in ['next'] and (group['num'] or group['article']):
+                    if group['ref'] in ['next'] and (group['num'] or group['article']):
                         if int(group['num'] or 1) > 1:
                             di = "%s %s" % (str(int(group['num'] or 1)), delta)
                         end = start + di
@@ -152,6 +116,43 @@ class Range(object):
                     # "1 year", "10 days" till now
                     elif group['num']:
                         end = start - group['main']
+
+                    # this                             [   x  ]
+                    elif group['ref'] in ['this', 'current', None]:
+
+                        if delta.startswith('y'):
+                            start = Date(datetime(now.year, 1, 1), offset=offset, tz=tz)
+
+                        # month
+                        elif delta.startswith('mo'):
+                            start = Date(datetime(now.year, now.month, 1), offset=offset, tz=tz)
+
+                        # week
+                        elif delta.startswith('w'):
+                            d = datetime(now.year, now.month, now.day)
+                            start = Date(d - timedelta(days=d.weekday()), offset=offset)
+
+                        # day
+                        elif delta.startswith('d'):
+                            start = Date("today", offset=offset, tz=tz)
+
+                        # hour
+                        elif delta.startswith('h'):
+                            start = Date("today", offset=offset, tz=tz)
+
+                        # minute
+                        elif delta.startswith('m'):
+                            start = Date('now', offset=offset, tz=tz)
+
+                        # second
+                        elif delta.startswith('s'):
+                            start = Date("now", offset=offset, tz=tz)
+
+                        else:
+                            raise TimestringInvalid("Not a valid time reference")
+
+                        end = start + di
+
 
                 elif group['day_2']:
                     # Relative day: "today" etc
@@ -217,6 +218,8 @@ class Range(object):
                         end = start + '1 month'
                     elif year is not None:
                         end = start + '1 year'
+                    else:
+                        end = start
 
                 else:
                     start = Date(start, offset=offset, tz=tz)
