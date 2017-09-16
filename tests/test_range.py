@@ -213,6 +213,18 @@ class RangeTest(unittest.TestCase):
                           datetime(2018, 1, 1, 0, 0, 0))
 
     def test_explicit_end(self):
+        _range = Range('2012 feb 2 1:13PM to 6:41 am on sept 8 2012')
+        self.assertEqual(_range[0].year, 2012)
+        self.assertEqual(_range[0].month, 2)
+        self.assertEqual(_range[0].day, 2)
+        self.assertEqual(_range[0].hour, 13)
+        self.assertEqual(_range[0].minute, 13)
+        self.assertEqual(_range[1].year, 2012)
+        self.assertEqual(_range[1].month, 9)
+        self.assertEqual(_range[1].day, 8)
+        self.assertEqual(_range[1].hour, 6)
+        self.assertEqual(_range[1].minute, 41)
+
         self.assert_range('from jan 10 2010 5 am to jan 10, 2010 9 am',
                           datetime(2010, 1, 10, 5),
                           datetime(2010, 1, 10, 9))
@@ -248,6 +260,21 @@ class RangeTest(unittest.TestCase):
         # TODO: jan 10th to 11th, 2010
         # TODO: jan 10 to 11, 2010
         # TODO: 10 to 11 pm
+
+    def test_implicit_end_year_is_next_year(self):
+        _range = Range("between january 15th at 3 am and august 5th 5pm")
+        self.assertEqual(_range[0].year, 2018)
+        self.assertEqual(_range[0].month, 1)
+        self.assertEqual(_range[0].day, 15)
+        self.assertEqual(_range[0].hour, 3)
+        self.assertEqual(_range[0].minute, 0)
+        self.assertEqual(_range[0].second, 0)
+        self.assertEqual(_range[1].year, 2018)
+        self.assertEqual(_range[1].month, 8)
+        self.assertEqual(_range[1].day, 5)
+        self.assertEqual(_range[1].hour, 17)
+        self.assertEqual(_range[1].minute, 0)
+        self.assertEqual(_range[1].second, 0)
 
     def test_relative_year(self):
         self.assert_range('this year',

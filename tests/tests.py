@@ -45,6 +45,21 @@ class timestringTests(unittest.TestCase):
         self.assertEqual(date.hour, 6)
         self.assertEqual(date.minute, 24)
 
+        date = Date('2012 feb 2 1:13PM')
+        self.assertEqual(date.year, 2012)
+        self.assertEqual(date.month, 2)
+        self.assertEqual(date.day, 2)
+        self.assertEqual(date.hour, 13)
+        self.assertEqual(date.minute, 13)
+
+        date = Date('6:41 am on sept 8 2012')
+        self.assertEqual(date.year, 2012)
+        self.assertEqual(date.month, 9)
+        self.assertEqual(date.day, 8)
+        self.assertEqual(date.hour, 6)
+        self.assertEqual(date.minute, 41)
+
+
         #
         # RANGE
         #
@@ -59,28 +74,6 @@ class timestringTests(unittest.TestCase):
         self.assertEqual(r.end.day, 1)
         self.assertEqual(r.end.hour, 17)
         self.assertEqual(r.end.minute, 1)
-
-        _range = Range("between january 15th at 3 am and august 5th 5pm")
-        self.assertEqual(_range[0].year, 2018)
-        self.assertEqual(_range[0].month, 1)
-        self.assertEqual(_range[0].day, 15)
-        self.assertEqual(_range[0].hour, 3)
-        self.assertEqual(_range[1].year, 2017)
-        self.assertEqual(_range[1].month, 8)
-        self.assertEqual(_range[1].day, 5)
-        self.assertEqual(_range[1].hour, 17)
-
-        _range = Range("2012 feb 2 1:13PM to 6:41 am on sept 8 2012")
-        self.assertEqual(_range[0].year, 2012)
-        self.assertEqual(_range[0].month, 2)
-        self.assertEqual(_range[0].day, 2)
-        self.assertEqual(_range[0].hour, 13)
-        self.assertEqual(_range[0].minute, 13)
-        self.assertEqual(_range[1].year, 2012)
-        self.assertEqual(_range[1].month, 9)
-        self.assertEqual(_range[1].day, 8)
-        self.assertEqual(_range[1].hour, 6)
-        self.assertEqual(_range[1].minute, 41)
 
         date = Date('2013-09-10T10:45:50')
         self.assertEqual(date.year, 2013)
