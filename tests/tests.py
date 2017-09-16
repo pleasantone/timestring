@@ -93,14 +93,14 @@ class timestringTests(unittest.TestCase):
 
         _range = Range('tomorrow 10am to 5pm')
         tomorrow = now + timedelta(days=1)
-        self.assertEquals(_range.start.year, tomorrow.year)
-        self.assertEquals(_range.end.year, tomorrow.year)
-        self.assertEquals(_range.start.month, tomorrow.month)
-        self.assertEquals(_range.end.month, tomorrow.month)
-        self.assertEquals(_range.start.day, tomorrow.day)
-        self.assertEquals(_range.end.day, tomorrow.day)
-        self.assertEquals(_range.start.hour, 10)
-        self.assertEquals(_range.end.hour, 17)
+        self.assertEqual(_range.start.year, tomorrow.year)
+        self.assertEqual(_range.end.year, tomorrow.year)
+        self.assertEqual(_range.start.month, tomorrow.month)
+        self.assertEqual(_range.end.month, tomorrow.month)
+        self.assertEqual(_range.start.day, tomorrow.day)
+        self.assertEqual(_range.end.day, tomorrow.day)
+        self.assertEqual(_range.start.hour, 10)
+        self.assertEqual(_range.end.hour, 17)
 
     def test_dates(self):
         date = Date("August 25th, 2014 12:30 PM")
@@ -235,7 +235,7 @@ class timestringTests(unittest.TestCase):
     def test_dow(self):
         now = datetime.now()
         hour_in_seconds = 24 * 60 * 60
-        for x, day in enumerate(('monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'Satruday', 'sunday')):
+        for x, day in enumerate(('monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday')):
             d, r = Date(day), Range(day)
             self.assertLess(d.date - now, timedelta(7))
             self.assertEqual(d.weekday, 1 + x)
