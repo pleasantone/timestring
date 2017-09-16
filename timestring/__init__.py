@@ -3,8 +3,6 @@ import sys
 import argparse
 from datetime import datetime
 
-__version__ = VERSION = version = '1.6.2'
-
 
 class TimestringInvalid(Exception):
     def __init__(self, reason):
@@ -99,7 +97,6 @@ def main():
                                      add_help=True,
                                      formatter_class=argparse.RawDescriptionHelpFormatter,
                                      epilog=""" """)
-    parser.add_argument('--version', action='version', version="timestring v%s - http://github.com/stevepeak/timestring" % version)
     parser.add_argument('-d', '--date', action='store_true')
     parser.add_argument('--verbose', '-v', action="store_true", help="Verbose mode")
     parser.add_argument('args', nargs="+", help="Time input")

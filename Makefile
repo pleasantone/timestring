@@ -1,13 +1,15 @@
 .PHONY: watch test
 
+VERSION=$(shell sed -n "/^version/s/version *= *'\([^']*\)'/\1/p" setup.py)
+
 open:
 	subl --project timestring.sublime-project
 
 deploy: tag upload
 
 tag:
-	git tag -a v$(shell python -c "import timestring;print timestring.version;") -m ""
-	git push origin v$(shell python -c "import timestring;print timestring.version;")
+	git tag -a v$(VERSION) -m ""
+	git push origin v$(VERSION)
 
 upload:
 	python setup.py sdist upload
@@ -22,8 +24,8 @@ test:
 
 test3:
 	. venv/bin/activate; pip3 uninstall -y timestring
-	. venv/bin/activate; python3.3 setup.py install
-	. venv/bin/activate; python3.3 -m tests.tests
+	. venv/bin/activate; python3 setup.py install
+	. venv/bin/activate; python3 -m tests.tests
 
 venv:
 	virtualenv venv
@@ -33,7 +35,7 @@ venv:
 
 venv3:
 	. venv/bin/activate; pip3 install -r requirements.txt
-	. venv/bin/activate; python3.3 setup.py install
+	. venv/bin/activate; python3 setup.py install
 
 watch:
 	watchr Watch
