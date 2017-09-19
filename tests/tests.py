@@ -6,17 +6,16 @@ from six import u
 from datetime import datetime, timedelta
 
 from freezegun import freeze_time
+import pytest
 
-from timestring import Date
-from timestring import Range
-from timestring import parse
+from timestring import Date, Range, parse, TimestringInvalid
 from timestring.text2num import text2num
 from timestring.timestring_re import TIMESTRING_RE as ts
 
 
 @freeze_time('2017-06-16 19:37:22')
 @ddt
-class timestringTests(unittest.TestCase):
+class T(unittest.TestCase):
     def assert_date(self, date_str, expected: datetime):
         actual = Date(date_str)
 
@@ -46,6 +45,21 @@ class timestringTests(unittest.TestCase):
         self.assertEqual(date.hour, 6)
         self.assertEqual(date.minute, 24)
 
+        date = Date('2012 feb 2 1:13PM')
+        self.assertEqual(date.year, 2012)
+        self.assertEqual(date.month, 2)
+        self.assertEqual(date.day, 2)
+        self.assertEqual(date.hour, 13)
+        self.assertEqual(date.minute, 13)
+
+        date = Date('6:41 am on sept 8 2012')
+        self.assertEqual(date.year, 2012)
+        self.assertEqual(date.month, 9)
+        self.assertEqual(date.day, 8)
+        self.assertEqual(date.hour, 6)
+        self.assertEqual(date.minute, 41)
+
+
         #
         # RANGE
         #
@@ -60,28 +74,6 @@ class timestringTests(unittest.TestCase):
         self.assertEqual(r.end.day, 1)
         self.assertEqual(r.end.hour, 17)
         self.assertEqual(r.end.minute, 1)
-
-        _range = Range("between january 15th at 3 am and august 5th 5pm")
-        self.assertEqual(_range[0].year, now.year)
-        self.assertEqual(_range[0].month, 1)
-        self.assertEqual(_range[0].day, 15)
-        self.assertEqual(_range[0].hour, 3)
-        self.assertEqual(_range[1].year, now.year)
-        self.assertEqual(_range[1].month, 8)
-        self.assertEqual(_range[1].day, 5)
-        self.assertEqual(_range[1].hour, 17)
-
-        _range = Range("2012 feb 2 1:13PM to 6:41 am on sept 8 2012")
-        self.assertEqual(_range[0].year, 2012)
-        self.assertEqual(_range[0].month, 2)
-        self.assertEqual(_range[0].day, 2)
-        self.assertEqual(_range[0].hour, 13)
-        self.assertEqual(_range[0].minute, 13)
-        self.assertEqual(_range[1].year, 2012)
-        self.assertEqual(_range[1].month, 9)
-        self.assertEqual(_range[1].day, 8)
-        self.assertEqual(_range[1].hour, 6)
-        self.assertEqual(_range[1].minute, 41)
 
         date = Date('2013-09-10T10:45:50')
         self.assertEqual(date.year, 2013)
@@ -126,48 +118,62 @@ class timestringTests(unittest.TestCase):
         self.assertEqual(Date("05/23/2012").month, 5)
         self.assertEqual(Date("01/10/2015 at 7:30pm").month, 1)
         self.assertEqual(Date("today").day, now.day)
-        self.assertEqual(Range('january')[0].month, 1)
-        self.assertEqual(Range('january')[0].day, 1)
-        self.assertEqual(Range('january')[0].hour, 0)
-        self.assertEqual(Range('january')[1].month, 2)
-        self.assertEqual(Range('january')[1].day, 1)
-        self.assertEqual(Range('january')[1].hour, 0)
-        self.assertEqual(Range('December')[0].month, 12)
-        self.assertEqual(Range('December')[0].day, 1)
-        self.assertEqual(Range('December')[0].hour, 0)
-        self.assertEqual(Range('December')[1].month, 1)
-        self.assertEqual(Range('December')[1].day, 1)
-        self.assertEqual(Range('December')[1].hour, 0)
-        self.assertEqual(Range('2010')[0].year, 2010)
-        self.assertEqual(Range('2010')[0].month, 1)
-        self.assertEqual(Range('2010')[0].day, 1)
-        self.assertEqual(Range('2010')[0].hour, 0)
-        self.assertEqual(Range('2010')[1].year, 2011)
-        self.assertEqual(Range('2010')[1].month, 1)
-        self.assertEqual(Range('2010')[1].day, 1)
-        self.assertEqual(Range('2010')[1].hour, 0)
 
-        self.assertEqual(Range('january 2011')[0].year, 2011)
-        self.assertEqual(Range('january 2011')[0].month, 1)
-        self.assertEqual(Range('january 2011')[0].day, 1)
-        self.assertEqual(Range('january 2011')[0].hour, 0)
-        self.assertEqual(Range('january 2011')[1].year, 2011)
-        self.assertEqual(Range('january 2011')[1].month, 2)
-        self.assertEqual(Range('january 2011')[1].day, 1)
-        self.assertEqual(Range('january 2011')[1].hour, 0)
+        range = Range('january')
+        self.assertEqual(range[0].month, 1)
+        self.assertEqual(range[0].day, 1)
+        self.assertEqual(range[0].hour, 0)
+        self.assertEqual(range[1].month, 2)
+        self.assertEqual(range[1].day, 1)
+        self.assertEqual(range[1].hour, 0)
+        range = Range('December')
+        self.assertEqual(range[0].month, 12)
+        self.assertEqual(range[0].day, 1)
+        self.assertEqual(range[0].hour, 0)
+        self.assertEqual(range[1].month, 1)
+        self.assertEqual(range[1].day, 1)
+        self.assertEqual(range[1].hour, 0)
+        range = Range('2010')
+        self.assertEqual(range[0].year, 2010)
+        self.assertEqual(range[0].month, 1)
+        self.assertEqual(range[0].day, 1)
+        self.assertEqual(range[0].hour, 0)
+        self.assertEqual(range[1].year, 2011)
+        self.assertEqual(range[1].month, 1)
+        self.assertEqual(range[1].day, 1)
+        self.assertEqual(range[1].hour, 0)
+        range = Range('january 2011')
+        self.assertEqual(range[0].year, 2011)
+        self.assertEqual(range[0].month, 1)
+        self.assertEqual(range[0].day, 1)
+        self.assertEqual(range[0].hour, 0)
+        self.assertEqual(range[1].year, 2011)
+        self.assertEqual(range[1].month, 2)
+        self.assertEqual(range[1].day, 1)
+        self.assertEqual(range[1].hour, 0)
 
-        self.assertEqual(Date(1374681560).year, 2013)
-        self.assertEqual(Date(1374681560).month, 7)
-        self.assertEqual(Date(1374681560).day, 24)
-        self.assertEqual(Date(str(1374681560)).year, 2013)
-        self.assertEqual(Date(str(1374681560)).month, 7)
-        self.assertEqual(Date(str(1374681560)).day, 24)
-
-        self.assertEqual(Range(1374681560).start.day, 24)
-        self.assertEqual(Range(1374681560).end.day, 25)
+        date = Date(1374681560)
+        self.assertEqual(date.year, 2013)
+        self.assertEqual(date.month, 7)
+        self.assertEqual(date.day, 24)
+        date = Date('1374681560')
+        self.assertEqual(date.year, 2013)
+        self.assertEqual(date.month, 7)
+        self.assertEqual(date.day, 24)
+        range = Range(1374681560)
+        self.assertEqual(range.start.day, 24)
+        self.assertEqual(range.end.day, 24)
 
         # offset timezones
         self.assertEqual(Date("2014-03-06 15:33:43.764419-05").hour, 20)
+
+        for date in ['yestserday', 'Satruday', Exception]:
+            with pytest.raises(TimestringInvalid, message=str(date)):
+                Date(date)
+
+            with pytest.raises(TimestringInvalid, message=str(date)):
+                Range(date)
+
 
     def test_this(self):
         now = datetime.now()
@@ -305,8 +311,8 @@ class timestringTests(unittest.TestCase):
         self.assertEqual(Date(date_1) - '5 days', date_2)
 
     def test_compare(self):
-        self.assertFalse(Range('10 days') == Date('yestserday'))
-        self.assertTrue(Date('yestserday') in Range('10 days'))
+        self.assertFalse(Range('10 days') == Date('yesterday'))
+        self.assertTrue(Date('yesterday') in Range('10 days'))
         self.assertTrue(Range('10 days') in Range('100 days'))
         self.assertTrue(Range('next 2 weeks') > Range('1 year'))
         self.assertTrue(Range('yesterday') < Range('now'))
@@ -328,7 +334,6 @@ class timestringTests(unittest.TestCase):
         self.assertTrue(Date('today') not in year)
 
         self.assertTrue(Date('last tuesday') in Range('last 14 days'))
-        self.assertTrue(Date('tuesday') in Range('next 7 days'))
         self.assertTrue(Date('tuesday') in Range('next 7 days'))
         self.assertTrue(Date('next tuesday') in Range('next 14 days'))
 

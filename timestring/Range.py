@@ -37,12 +37,17 @@ class Range(object):
             end = str(end)
 
         if start and end:
-            # Start and end provided as Dates
             self._dates = (Date(start, tz=tz), Date(end, tz=tz))
 
         elif start == 'infinity':
-            # End was not provided
             self._dates = (Date('infinity'), Date('infinity'))
+
+        elif isinstance(start, (int, long, float)) \
+                    or (isinstance(start, (str, unicode)) and start.isdigit()) \
+                and len(str(int(float(start)))) > 4:
+            start = Date(start)
+            end = start + '1 second'
+            self._dates = start, end
 
         elif re.search(r'(\s(and|to)\s)', start):
             # Both sides are provided in string "start"
@@ -59,8 +64,7 @@ class Range(object):
 
         else:
 
-            now = get_timezone_time(tz)#datetime.now()
-            # no tz info but offset provided, we are UTC so convert
+            now = datetime.now(tz)
 
             if re.search(r"(\+|\-)\d{2}$", start):
                 # postgresql tsrange and tstzranges
@@ -81,49 +85,11 @@ class Range(object):
                 if (group.get('delta') or group.get('delta_2')) is not None:
                     delta = (group.get('delta') or group.get('delta_2')).lower()
 
-                    # always start w/ today
                     start = Date("now", offset=offset, tz=tz)
-                    # make delta
                     di = "%s %s" % (str(int(group['num'] or 1)), delta)
 
-                    # this                             [   x  ]
-                    if group['ref'] in ['this', 'current']:
-
-                        if delta.startswith('y'):
-                            start = Date(datetime(now.year, 1, 1), offset=offset, tz=tz)
-
-                        # month
-                        elif delta.startswith('mo'):
-                            start = Date(datetime(now.year, now.month, 1), offset=offset, tz=tz)
-
-                        # week
-                        elif delta.startswith('w'):
-                            d = datetime(now.year, now.month, now.day)
-                            start = Date(d - timedelta(days=d.weekday()))
-
-                        # day
-                        elif delta.startswith('d'):
-                            start = Date("today", offset=offset, tz=tz)
-
-                        # hour
-                        elif delta.startswith('h'):
-                            start = Date("today", offset=dict(hour=now.hour), tz=tz)
-
-                        # minute
-                        elif delta.startswith('m'):
-                            start = Date('now', offset=dict(minute=now.minute), tz=tz)
-
-                        # second
-                        elif delta.startswith('s'):
-                            start = Date("now", tz=tz)
-
-                        else:
-                            raise TimestringInvalid("Not a valid time reference")
-
-                        end = start + di
-
                     # "next 2 weeks", "the next hour"   x[     ][     ]
-                    elif group['ref'] in ['next'] and (group['num'] or group['article']):
+                    if group['ref'] in ['next'] and (group['num'] or group['article']):
                         if int(group['num'] or 1) > 1:
                             di = "%s %s" % (str(int(group['num'] or 1)), delta)
                         end = start + di
@@ -152,6 +118,42 @@ class Range(object):
                     # "1 year", "10 days" till now
                     elif group['num']:
                         end = start - group['main']
+
+                    # this                             [   x  ]
+                    elif group['ref'] in ['this', 'current', None]:
+
+                        if delta.startswith('y'):
+                            start = Date(datetime(now.year, 1, 1), offset=offset, tz=tz)
+
+                        # month
+                        elif delta.startswith('mo'):
+                            start = Date(datetime(now.year, now.month, 1), offset=offset, tz=tz)
+
+                        # week
+                        elif delta.startswith('w'):
+                            d = datetime(now.year, now.month, now.day)
+                            start = Date(d - timedelta(days=d.weekday()), offset=offset)
+
+                        # day
+                        elif delta.startswith('d'):
+                            start = Date("today", offset=offset, tz=tz)
+
+                        # hour
+                        elif delta.startswith('h'):
+                            start = Date("today", offset=offset, tz=tz)
+
+                        # minute
+                        elif delta.startswith('m'):
+                            start = Date('now', offset=offset, tz=tz)
+
+                        # second
+                        elif delta.startswith('s'):
+                            start = Date("now", offset=offset, tz=tz)
+
+                        else:
+                            raise TimestringInvalid("Not a valid time reference")
+
+                        end = start + di
 
                 elif group['day_2']:
                     # Relative day: "today" etc
@@ -184,26 +186,33 @@ class Range(object):
                             start += '1 year'
                     end = start + '1 month'
 
-                elif group['date_5'] or group['date_6'] or group['time_2']:
-                    # TODO: Move this code to Date?
+                elif group['date_5'] or group['date_6']:
+                    start = Date(res.string, offset=offset, tz=tz)
                     year = g('year', 'year_2', 'year_3', 'year_4', 'year_5', 'year_6')
                     month = g('month', 'month_2', 'month_3', 'month_4', 'month_5')
                     day = g('date', 'date_2', 'date_3', 'date_4')
+
+                    if day:
+                        end = start + '1 day'
+                    elif month:
+                        end = start + '1 month'
+                    elif year is not None:
+                        end = start + '1 year'
+                    else:
+                        end = start
+
+                if not isinstance(start, Date):
+                    start = Date(now)
+
+                if group['time_2']:
+                    temp = Date(res.string, offset=offset, tz=tz).date
+                    start = start.replace(hour=temp.hour,
+                                          minute=temp.minute,
+                                          second=temp.second)
+
                     hour = g('hour', 'hour_2', 'hour_3')
                     minute = g('minute', 'minute_2')
                     second = g('seconds')
-
-                    start = Date(start, offset=offset, tz=tz)
-                    if month is None and year is not None:
-                        start = start.replace(month=1)
-                    if day is None and (month or not (hour or group['daytime'])):
-                        start = start.replace(day=1)
-                    if hour is None and not group['daytime']:
-                        start = start.replace(hour=0)
-                    if minute is None:
-                        start = start.replace(minute=0)
-                    if second is None:
-                        start = start.replace(second=0)
 
                     if second:
                         end = start + '1 second'
@@ -211,16 +220,8 @@ class Range(object):
                         end = start + '1 minute'
                     elif hour:
                         end = start + '1 hour'
-                    elif day:
-                        end = start + '1 day'
-                    elif month:
-                        end = start + '1 month'
-                    elif year is not None:
-                        end = start + '1 year'
-
-                else:
-                    start = Date(start, offset=offset, tz=tz)
-                    end = start + '1 day'
+                    else:
+                        end = start
 
                 if start <= now <= end:
                     if context == CONTEXT_PAST:
@@ -238,7 +239,6 @@ class Range(object):
                 end = start + '24 hours'
 
             if start > end:
-                # flip them if this is so
                 start, end = copy(end), copy(start)
 
             if pgoffset:

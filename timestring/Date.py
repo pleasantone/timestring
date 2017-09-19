@@ -31,43 +31,50 @@ WEEKDAY_ORDINALS = dict(
 
 
 class Date(object):
-    def __init__(self, date, offset=None, start_of_week=None, tz=None, verbose=False):
-        if isinstance(date, Date):
-            self.date = copy(date.date)
-            return
-
-        # The original request
+    def __init__(self, date=None, offset=None, start_of_week=None, tz=None, verbose=False):
         self._original = date
         if tz:
             tz = pytz.timezone(str(tz))
+        else:
+            tz = None
 
-        if date == 'infinity':
+        if isinstance(date, Date):
+            self.date = copy(date.date)
+
+        elif isinstance(date, datetime):
+            self.date = date
+
+        elif isinstance(date, (int, long, float)) \
+                    or (isinstance(date, (str, unicode)) and date.isdigit()) \
+                and len(str(int(float(date)))) > 4:
+            self.date = datetime.fromtimestamp(int(date))
+
+        elif date == 'now' or date is None:
+            self.date = datetime.now(tz)
+
+        elif date == 'infinity':
             self.date = 'infinity'
 
-        elif date == 'now':
-            self.date = get_timezone_time(tz)#datetime.now()
-
-        elif type(date) in (str, unicode) and re.match(r"\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d+-\d{2}", date):
+        elif isinstance(date, (str, unicode)) and re.match(r"\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d+-\d{2}", date):
             self.date = datetime.strptime(date[:-3], "%Y-%m-%d %H:%M:%S.%f") - timedelta(hours=int(date[-3:]))
 
-        else:
-            # Determinal starting date.
+        elif isinstance(date, (str, unicode, dict)):
             if type(date) in (str, unicode):
-                """The date is a string and needs to be converted into a <dict> for processesing
-                """
+                # Convert the string to a dict
                 _date = date.lower()
                 res = TIMESTRING_RE.search(_date.strip())
+
                 if res:
                     date = res.groupdict()
                     if verbose:
                         print("Matches:\n", ''.join(["\t%s: %s\n" % (k, v) for k, v in date.items() if v]))
                 else:
-                    raise TimestringInvalid('Invalid date string >> %s' % date)
+                    raise TimestringInvalid('Invalid date string: %s' % date)
 
                 date = dict((k, v if type(v) is str else v) for k, v in date.items() if v)
-                #print(_date, dict(map(lambda a: (a, date.get(a)), filter(lambda a: date.get(a), date))))
 
-            if isinstance(date, dict):
+            # TODO Refactor
+            if isinstance(date, dict):  # This will always be True
                 # Initial date.
                 now = get_timezone_time(tz)#datetime(*time.localtime()[:3])
                 new_date = copy(now)
@@ -162,7 +169,6 @@ class Date(object):
                         year += 2000 if year <= 40 else 1900
                     new_date = new_date.replace(year=year)
 
-
                 # !month
                 month = [date.get(key) for key in ('month', 'month_1', 'month_2', 'month_3', 'month_4', 'month_5') if date.get(key)]
                 if month:
@@ -202,7 +208,6 @@ class Date(object):
                     # No offset because the hour was set.
                     offset = False
 
-
                 # !hour
                 hour = [date.get(key) for key in ('hour', 'hour_2', 'hour_3') if date.get(key)]
                 if hour:
@@ -225,34 +230,21 @@ class Date(object):
                     if seconds:
                         new_date = new_date.replace(second=int(seconds))
 
-                if dow is None and not (day or hour):
+                if year != [] and not month and dow is None and not day:
+                    new_date = new_date.replace(month=1)
+                if (year != [] or month) and dow is None and not (day or hour):
                     new_date = new_date.replace(day=1)
-                if hour == [] and daytime is None:
+                if not hour and daytime is None:
                     new_date = new_date.replace(hour=0, minute=0, second=0)
 
-                self.date = new_date
+            new_date = new_date.replace(microsecond=0)
+            self.date = new_date
 
-            elif type(date) in (int, long, float) and re.match('^\d{10}$', str(date)):
-                self.date = datetime.fromtimestamp(int(date))
+        else:
+            raise TimestringInvalid('Invalid type for constructing Date')
 
-            elif isinstance(date, datetime):
-                self.date = date
-
-            elif date is None:
-                self.date = get_timezone_time(tz)#datetime.now()
-
-            else:
-                # Set to the current date Y, M, D, H0, M0, S0
-                self.date = get_timezone_time(tz) #datetime(*time.localtime()[:3])
-                new_date = new_date.replace(hour=0, minute=0, second=0)
-
-
-            # if tz:
-            #     self.date = self.date.replace(tzinfo=tz)
-
-            # end if type(date) is types.DictType: and self.date.hour == 0:
-            if offset and isinstance(offset, dict):
-                self.date = self.date.replace(**offset)
+        if offset and isinstance(offset, dict):
+            self.date = self.date.replace(**offset)
 
     def __repr__(self):
         return "<timestring.Date %s %s>" % (str(self), id(self))
