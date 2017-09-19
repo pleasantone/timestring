@@ -241,7 +241,7 @@ class T(unittest.TestCase):
     def test_dow(self):
         now = datetime.now()
         hour_in_seconds = 24 * 60 * 60
-        for x, day in enumerate(('monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'Saturday', 'sunday')):
+        for x, day in enumerate(('monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday')):
             d, r = Date(day), Range(day)
             self.assertLess(d.date - now, timedelta(7))
             self.assertEqual(d.weekday, 1 + x)
