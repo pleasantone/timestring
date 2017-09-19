@@ -169,7 +169,6 @@ class Date(object):
                         year += 2000 if year <= 40 else 1900
                     new_date = new_date.replace(year=year)
 
-
                 # !month
                 month = [date.get(key) for key in ('month', 'month_1', 'month_2', 'month_3', 'month_4', 'month_5') if date.get(key)]
                 if month:
@@ -231,11 +230,14 @@ class Date(object):
                     if seconds:
                         new_date = new_date.replace(second=int(seconds))
 
-                if dow is None and not (day or hour):
+                if year != [] and not month and dow is None and not day:
+                    new_date = new_date.replace(month=1)
+                if (year != [] or month) and dow is None and not (day or hour):
                     new_date = new_date.replace(day=1)
-                if hour == [] and daytime is None:
+                if not hour and daytime is None:
                     new_date = new_date.replace(hour=0, minute=0, second=0)
 
+            new_date = new_date.replace(microsecond=0)
             self.date = new_date
 
         else:

@@ -37,12 +37,17 @@ class Range(object):
             end = str(end)
 
         if start and end:
-            # Start and end provided as Dates
             self._dates = (Date(start, tz=tz), Date(end, tz=tz))
 
         elif start == 'infinity':
-            # End was not provided
             self._dates = (Date('infinity'), Date('infinity'))
+
+        elif isinstance(start, (int, long, float)) \
+                    or (isinstance(start, (str, unicode)) and start.isdigit()) \
+                and len(str(int(float(start)))) > 4:
+            start = Date(start)
+            end = start + '1 second'
+            self._dates = start, end
 
         elif re.search(r'(\s(and|to)\s)', start):
             # Both sides are provided in string "start"
@@ -59,8 +64,7 @@ class Range(object):
 
         else:
 
-            now = get_timezone_time(tz)#datetime.now()
-            # no tz info but offset provided, we are UTC so convert
+            now = datetime.now(tz)
 
             if re.search(r"(\+|\-)\d{2}$", start):
                 # postgresql tsrange and tstzranges
@@ -81,9 +85,7 @@ class Range(object):
                 if (group.get('delta') or group.get('delta_2')) is not None:
                     delta = (group.get('delta') or group.get('delta_2')).lower()
 
-                    # always start w/ today
                     start = Date("now", offset=offset, tz=tz)
-                    # make delta
                     di = "%s %s" % (str(int(group['num'] or 1)), delta)
 
                     # "next 2 weeks", "the next hour"   x[     ][     ]
@@ -153,7 +155,6 @@ class Range(object):
 
                         end = start + di
 
-
                 elif group['day_2']:
                     # Relative day: "today" etc
                     # Week day: "Monday" etc
@@ -185,34 +186,13 @@ class Range(object):
                             start += '1 year'
                     end = start + '1 month'
 
-                elif group['date_5'] or group['date_6'] or group['time_2']:
-                    # TODO: Move this code to Date?
+                elif group['date_5'] or group['date_6']:
+                    start = Date(res.string, offset=offset, tz=tz)
                     year = g('year', 'year_2', 'year_3', 'year_4', 'year_5', 'year_6')
                     month = g('month', 'month_2', 'month_3', 'month_4', 'month_5')
                     day = g('date', 'date_2', 'date_3', 'date_4')
-                    hour = g('hour', 'hour_2', 'hour_3')
-                    minute = g('minute', 'minute_2')
-                    second = g('seconds')
 
-                    start = Date(start, offset=offset, tz=tz)
-                    if month is None and year is not None:
-                        start = start.replace(month=1)
-                    if day is None and (month or not (hour or group['daytime'])):
-                        start = start.replace(day=1)
-                    if hour is None and not group['daytime']:
-                        start = start.replace(hour=0)
-                    if minute is None:
-                        start = start.replace(minute=0)
-                    if second is None:
-                        start = start.replace(second=0)
-
-                    if second:
-                        end = start + '1 second'
-                    elif minute:
-                        end = start + '1 minute'
-                    elif hour:
-                        end = start + '1 hour'
-                    elif day:
+                    if day:
                         end = start + '1 day'
                     elif month:
                         end = start + '1 month'
@@ -221,9 +201,27 @@ class Range(object):
                     else:
                         end = start
 
-                else:
-                    start = Date(start, offset=offset, tz=tz)
-                    end = start + '1 day'
+                if not isinstance(start, Date):
+                    start = Date(now)
+
+                if group['time_2']:
+                    temp = Date(res.string, offset=offset, tz=tz).date
+                    start = start.replace(hour=temp.hour,
+                                          minute=temp.minute,
+                                          second=temp.second)
+
+                    hour = g('hour', 'hour_2', 'hour_3')
+                    minute = g('minute', 'minute_2')
+                    second = g('seconds')
+
+                    if second:
+                        end = start + '1 second'
+                    elif minute:
+                        end = start + '1 minute'
+                    elif hour:
+                        end = start + '1 hour'
+                    else:
+                        end = start
 
                 if start <= now <= end:
                     if context == CONTEXT_PAST:
@@ -241,7 +239,6 @@ class Range(object):
                 end = start + '24 hours'
 
             if start > end:
-                # flip them if this is so
                 start, end = copy(end), copy(start)
 
             if pgoffset:
