@@ -87,8 +87,13 @@ class Date(object):
                 # Number of (days|...) [ago]
                 elif num and delta:
                     delta = delta.lower()
+                    if date.get('ago') or ref == 'last':
+                        sign = -1
+                    elif date.get('in') or date.get('from_now') or ref == 'next':
+                        sign = 1
+                    else:
+                        raise TimestringInvalid('Missing relationship such as "ago" or "from now"')
 
-                    sign = -1 if date.get('ago', True) or ref == 'last' else 1
                     if 'couple' in (num or ''):
                         mag = 2
                     else:
@@ -103,7 +108,11 @@ class Date(object):
                             new_date += timedelta(days=365 * i)
                     elif delta.startswith('month'):
                         try:
-                            new_date = new_date.replace(month=new_date.month + i)
+                            month = new_date.month + i
+                            new_date = new_date.replace(
+                                year=new_date.year + month // 12,
+                                month=abs(month) % 12
+                            )
                         except ValueError:  # No such day in that month
                             new_date += timedelta(days=30 * i)
 
@@ -127,17 +136,8 @@ class Date(object):
                             pass
                         new_date += timedelta(days= 91 * i)
 
-                    elif delta.startswith('w'):
-                        new_date += timedelta(days=i * 7)
-                    elif delta.startswith('d'):
-                        new_date += timedelta(days=i)
-                    elif delta.startswith('h'):
-                        new_date += timedelta(hours=i)
-                    elif delta.startswith('m'):
-                        new_date += timedelta(minutes=i)
-                    elif delta.startswith('s'):
-                        new_date += timedelta(seconds=i)
-
+                    else:
+                        new_date += timedelta(**{delta:i})
 
                 # !dow
                 dow = next((date.get(key) for key in ('day', 'day_2', 'day_3')

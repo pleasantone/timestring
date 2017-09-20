@@ -6,7 +6,6 @@ from six import u
 from datetime import datetime, timedelta
 
 from freezegun import freeze_time
-import pytest
 
 from timestring import Date, Range, parse, TimestringInvalid
 from timestring.text2num import text2num
@@ -168,10 +167,10 @@ class T(unittest.TestCase):
         self.assertEqual(Date("2014-03-06 15:33:43.764419-05").hour, 20)
 
         for date in ['yestserday', 'Satruday', Exception]:
-            with pytest.raises(TimestringInvalid, message=str(date)):
+            with self.assertRaises(TimestringInvalid):
                 Date(date)
 
-            with pytest.raises(TimestringInvalid, message=str(date)):
+            with self.assertRaises(TimestringInvalid):
                 Range(date)
 
 

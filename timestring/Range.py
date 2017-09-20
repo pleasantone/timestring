@@ -101,7 +101,9 @@ class Range(object):
                         end = start + di
 
                     # ago                               [     ](     )x
-                    elif group['ago']:
+                    # from now                         x(     )[     ]
+                    # in                               x(     )[     ]
+                    elif group['ago'] or group['from_now'] or group['in']:
                         start = Date(res.string)
                         if not re.match('(hour|minute|second)s?', delta):
                             start = start.replace(hour=0, minute=0, second=0)

@@ -525,6 +525,127 @@ class RangeTest(unittest.TestCase):
                           datetime(2017, 6, 16, 19, 37, 20),
                           datetime(2017, 6, 16, 19, 37, 21))
 
+        # Implicit change of year, month, date etc
+        self.assert_range('10 months ago',
+                          datetime(2016, 4, 16),
+                          datetime(2016, 4, 17))
+
+        self.assert_range('20 days ago',
+                          datetime(2017, 5, 27),
+                          datetime(2017, 5, 28))
+
+        self.assert_range('20 hours ago',
+                          datetime(2017, 6, 15, 23),
+                          datetime(2017, 6, 16, 0))
+
+        self.assert_range('45 minutes ago',
+                          datetime(2017, 6, 16, 18, 52),
+                          datetime(2017, 6, 16, 18, 53))
+
+        self.assert_range('45 seconds ago',
+                          datetime(2017, 6, 16, 19, 36, 37),
+                          datetime(2017, 6, 16, 19, 36, 38))
+
+    def test_from_now(self):
+        self.assert_range('2 years from now',
+                          datetime(2019, 6, 16),
+                          datetime(2019, 6, 17))
+
+        self.assert_range('2 months from now',
+                          datetime(2017, 8, 16),
+                          datetime(2017, 8, 17))
+
+        self.assert_range('2 weeks from now',
+                          datetime(2017, 6, 30),
+                          datetime(2017, 7, 1))
+
+        self.assert_range('2 days from now',
+                          datetime(2017, 6, 18),
+                          datetime(2017, 6, 19))
+
+        self.assert_range('2 hours from now',
+                          datetime(2017, 6, 16, 21),
+                          datetime(2017, 6, 16, 22))
+
+        self.assert_range('2 minutes from now',
+                          datetime(2017, 6, 16, 19, 39),
+                          datetime(2017, 6, 16, 19, 40))
+
+        self.assert_range('2 seconds from now',
+                          datetime(2017, 6, 16, 19, 37, 24),
+                          datetime(2017, 6, 16, 19, 37, 25))
+
+        # Implicit change of year, month, date etc
+        self.assert_range('10 months from now',
+                          datetime(2018, 4, 16),
+                          datetime(2018, 4, 17))
+
+        self.assert_range('20 days from now',
+                          datetime(2017, 7, 6),
+                          datetime(2017, 7, 7))
+
+        self.assert_range('20 hours from now',
+                          datetime(2017, 6, 17, 15),
+                          datetime(2017, 6, 17, 16))
+
+        self.assert_range('45 minutes from now',
+                          datetime(2017, 6, 16, 20, 22),
+                          datetime(2017, 6, 16, 20, 23))
+
+        self.assert_range('45 seconds from now',
+                          datetime(2017, 6, 16, 19, 38, 7),
+                          datetime(2017, 6, 16, 19, 38, 8))
+
+    def test_in(self):
+        self.assert_range('in 2 years',
+                          datetime(2019, 6, 16),
+                          datetime(2019, 6, 17))
+
+        self.assert_range('in 2 months',
+                          datetime(2017, 8, 16),
+                          datetime(2017, 8, 17))
+
+        self.assert_range('in 2 weeks',
+                          datetime(2017, 6, 30),
+                          datetime(2017, 7, 1))
+
+        self.assert_range('in 2 days',
+                          datetime(2017, 6, 18),
+                          datetime(2017, 6, 19))
+
+        self.assert_range('in 2 hours',
+                          datetime(2017, 6, 16, 21),
+                          datetime(2017, 6, 16, 22))
+
+        self.assert_range('in 2 minutes',
+                          datetime(2017, 6, 16, 19, 39),
+                          datetime(2017, 6, 16, 19, 40))
+
+        self.assert_range('in 2 seconds',
+                          datetime(2017, 6, 16, 19, 37, 24),
+                          datetime(2017, 6, 16, 19, 37, 25))
+
+        # Implicit change of year, month, date etc
+        self.assert_range('in 10 months',
+                          datetime(2018, 4, 16),
+                          datetime(2018, 4, 17))
+
+        self.assert_range('in 20 days',
+                          datetime(2017, 7, 6),
+                          datetime(2017, 7, 7))
+
+        self.assert_range('in 20 hours',
+                          datetime(2017, 6, 17, 15),
+                          datetime(2017, 6, 17, 16))
+
+        self.assert_range('in 45 minutes',
+                          datetime(2017, 6, 16, 20, 22),
+                          datetime(2017, 6, 16, 20, 23))
+
+        self.assert_range('in 45 seconds',
+                          datetime(2017, 6, 16, 19, 38, 7),
+                          datetime(2017, 6, 16, 19, 38, 8))
+
 
 def main():
     os.environ['TZ'] = 'UTC'
