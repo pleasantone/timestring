@@ -28,6 +28,23 @@ WEEKDAY_ORDINALS = dict(
     mon=1, tue=2, tues=2, wed=3, wedn=3, thu=4, thur=4, fri=5, sat=6, sun=7,
     mo=1, tu=2, we=3, th=4, fr=5, sa=6, su=7,
 )
+RELATIVE_DAYS = {
+    'now': 0,
+    'today': 0,
+    'yesterday': -1,
+    'tomorrow': 1,
+    'day before yesterday': -2,
+    'day after tomorrow': 2,
+}
+DAYTIMES = dict(
+    morning=9,
+    noon=12,
+    afternoon=15,
+    evening=18,
+    night=21,
+    nighttime=21,
+    midnight=24
+)
 
 
 class Date(object):
@@ -139,15 +156,12 @@ class Date(object):
                     else:
                         new_date += timedelta(**{delta:i})
 
-                # !dow
-                dow = next((date.get(key) for key in ('day', 'day_2', 'day_3')
-                           if date.get(key)),
-                          None)
-                if dow is not None:
-                    new_date.replace(hour=0, minute=0, second=0, microsecond=0)
-                    iso = WEEKDAY_ORDINALS.get(dow)
+                weekday = date.get('weekday')
+                relative_day = date.get('relative_day')
+                if weekday:
+                    new_date = new_date.replace(hour=0, minute=0, second=0, microsecond=0)
+                    iso = WEEKDAY_ORDINALS.get(weekday)
                     if iso:
-                        # Determine direction
                         if ref in ['next', 'upcoming']:
                             days = iso - new_date.isoweekday() + (7 if iso <= new_date.isoweekday() else 0)
                         elif ref in ['last', 'previous', 'prev']:
@@ -155,15 +169,11 @@ class Date(object):
                         else:
                             days = iso - new_date.isoweekday() + (7 if iso < new_date.isoweekday() else 0)
                         new_date = new_date + timedelta(days=days)
-                    else:
-                        if dow == 'yesterday':
-                            new_date = new_date - timedelta(days=1)
-                        elif dow == 'tomorrow':
-                            new_date = new_date + timedelta(days=1)
-                        elif dow == 'day before yesterday':
-                            new_date = new_date - timedelta(days=2)
-                        elif dow == 'day after tomorrow':
-                            new_date = new_date + timedelta(days=2)
+                elif relative_day:
+                    days = RELATIVE_DAYS.get(re.sub(r'\s+', ' ', relative_day))
+                    if days:
+                        new_date += timedelta(days=days)
+                    new_date = new_date.replace(hour=0, minute=0, second=0, microsecond=0)
 
                 # !year
                 year = [int(CLEAN_NUMBER.sub('', date[key])) for key in ('year', 'year_2', 'year_3', 'year_4', 'year_5', 'year_6') if date.get(key)]
@@ -208,9 +218,14 @@ class Date(object):
                     if daytime.find('this time') >= 1:
                         current_time = get_timezone_time(tz)
                         new_date = new_date.replace(hour= current_time.hour,
-                                                    minute=current_time.minute)
+                                                    minute=current_time.minute,
+                                                    second=current_time.second)
                     else:
-                        new_date = new_date.replace(hour=dict(morning=9, noon=12, afternoon=15, evening=18, night=21, nighttime=21, midnight=24).get(date.get('daytime'), 12))
+                        _hour = DAYTIMES.get(date.get('daytime'), 12)
+                        new_date = new_date.replace(hour=_hour,
+                                                    minute=0,
+                                                    second=0,
+                                                    microsecond=0)
                     # No offset because the hour was set.
                     offset = False
 
@@ -236,9 +251,11 @@ class Date(object):
                     if seconds:
                         new_date = new_date.replace(second=int(seconds))
 
-                if year != [] and not month and dow is None and not day:
+                    new_date = new_date.replace(microsecond=0)
+
+                if year != [] and not month and weekday is None and not day:
                     new_date = new_date.replace(month=1)
-                if (year != [] or month) and dow is None and not (day or hour):
+                if (year != [] or month) and weekday is None and not (day or hour):
                     new_date = new_date.replace(day=1)
                 if not hour and daytime is None and not delta:
                     new_date = new_date.replace(hour=0, minute=0, second=0)

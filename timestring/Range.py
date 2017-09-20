@@ -129,7 +129,7 @@ class Range(object):
 
                     # "1 year", "10 days" till now
                     elif group['num']:
-                        end = start - group['main']
+                        end = start - group['duration']
 
                     # this                             [   x  ]
                     elif group['ref'] in ['this', 'current', None]:
@@ -167,21 +167,8 @@ class Range(object):
 
                         end = start + di
 
-                elif group['day_2']:
-                    # Relative day: "today" etc
-                    # Week day: "Monday" etc
-                    start = Date(group['day_2'], offset=offset, tz=tz)
-                    start = start.replace(hour=0, minute=0, second=0)
-                    if group['ref'] in ['last', 'prev', 'previous']:
-                        start -= '1 week'
-                    elif group['ref'] in ['next', 'upcoming'] and start.weekday == now.isoweekday():
-                        start += '1 week'
-                    end = start + '1 day'
-
-                elif group['day_3']:
-                    # "Day after tomorrow", "Day after yesterday"
-                    start = Date(group['day_3'], offset=offset, tz=tz)
-                    start = start.replace(hour=0, minute=0, second=0)
+                elif group['relative_day'] or group['weekday']:
+                    start = Date(res.string, offset=offset, tz=tz)
                     end = start + '1 day'
 
                 elif group.get('month_1'):

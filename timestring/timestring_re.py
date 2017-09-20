@@ -4,19 +4,19 @@ TIMESTRING_RE = re.compile(re.sub('[\t\n\s]', '', re.sub('(\(\?\#[^\)]+\))', '',
         ((?P<prefix>between|from|before|after|\>=?|\<=?|greater\s+th(a|e)n(\s+a)?|less\s+th(a|e)n(\s+a)?)\s+)?
         (
             (?P<unixtime>\d{10})
-
             |
-            (?P<day_3>day\s+after\s+tomorrow|day\s+before\s+yesterday)
-
-            |
-
             (
                 (
-                    (?P<article>the\s)?
+                    (\b(?P<article>the\s)\s+)?
+                    \b(?P<relative_day>day\s+before\s+yesterday|day\s+after\s+tomorrow|today|now|yesterday|tomorrow)\b
+                    |
                     ((?P<ref>next|upcoming|last|prev(ious)|past|this|current)\s+)?
-                    (?P<main>
+                    (
+                        (?# =-=-=-= Matches Days =-=-=-= )
+                        (?P<weekday>\b(mondays?|tuesdays?|wednesdays?|thursdays?|fridays?|saturdays?|sundays?|mon|tues?|wedn?|thur?|fri|sat|sun)\b)
+                        |
                         (?# =-=-=-= Matches:: number-frame-ago?, "4 weeks", "sixty days ago" =-=-=-= )
-                        (
+                        (?P<duration>
                             (\b(?P<in>in\s+))?
                             (?P<num>((\d+|couple(\s+of)?|one|two|twenty|twelve|three|thirty|thirteen|four(teen|ty)?|five|fif(teen|ty)|six(teen|ty)?|seven(teen|ty)?|eight(een|y)?|nine(teen|ty)?|ten|eleven|hundred)\s*)*)
                             (
@@ -25,14 +25,7 @@ TIMESTRING_RE = re.compile(re.sub('[\t\n\s]', '', re.sub('(\(\?\#[^\)]+\))', '',
                             )
                             (\s+((?P<ago>ago)|(?P<from_now>from\s+now))\b)?
                         )
-
                         |
-
-                        (?# =-=-=-= Matches Days =-=-=-= )
-                        (?P<day_2>\b(yesterday|today|now|tomorrow|mondays?|tuesdays?|wednesdays?|thursdays?|fridays?|saturdays?|sundays?|mon|tues?|wedn?|thur?|fri|sat|sun)\b)
-
-                        |
-
                         (?# =-=-=-= Matches Y-M-D, M-D-Y, D-M-Y, Y-D-M ex. "january 5, 2012", "january 5th, '12", "jan 5th 2012", "5 December, 2016" =-=-=-= )
                         (?P<date_5>
                             ((?P<year_6>(([12][089]\d{2})|('\d{2})))?([\/\-\s]+)?)
