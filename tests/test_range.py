@@ -646,6 +646,48 @@ class RangeTest(unittest.TestCase):
                           datetime(2017, 6, 16, 19, 38, 7),
                           datetime(2017, 6, 16, 19, 38, 8))
 
+    def test_since(self):
+        now = datetime.now()
+        self.assert_range('since last may', datetime(2017, 5, 1), now)
+        self.assert_range('since last Friday', datetime(2017, 6, 9), now)
+        self.assert_range('since last Saturday', datetime(2017, 6, 10), now)
+        self.assert_range('since last Thursday', datetime(2017, 6, 15), now)
+        self.assert_range('since last year', datetime(2016, 1, 1), now)
+        self.assert_range('since last month', datetime(2017, 5, 1), now)
+        self.assert_range('since last week', datetime(2017, 6, 5), now)
+        self.assert_range('since yesterday', datetime(2017, 6, 15), now)
+
+        self.assert_range('since 2016', datetime(2016, 1, 1), now)
+        self.assert_range('since July', datetime(2016, 7, 1), now)
+        self.assert_range('since April 2016', datetime(2016, 4, 1), now)
+        self.assert_range('since April 11, 2016', datetime(2016, 4, 11), now)
+        self.assert_range('since Friday', datetime(2017, 6, 9), now)
+        self.assert_range('since Saturday', datetime(2017, 6, 10), now)
+        self.assert_range('since Thursday', datetime(2017, 6, 15), now)
+
+        self.assert_range('since this month', datetime(2017, 6, 1), now)
+        self.assert_range('since this week', datetime(2017, 6, 12), now)
+        self.assert_range('since today', datetime(2017, 6, 16), now)
+        self.assert_range('since this morning', datetime(2017, 6, 16, 9), now)
+        self.assert_range('since 4pm', datetime(2017, 6, 16, 16), now)
+
+        self.assert_range('since 2 years ago', datetime(2015, 6, 16), now)
+        self.assert_range('since 2 months ago', datetime(2017, 4, 16), now)
+        self.assert_range('since 2 weeks ago', datetime(2017, 6, 2), now)
+        self.assert_range('since 2 days ago', datetime(2017, 6, 14), now)
+        self.assert_range('since 2 hours ago', datetime(2017, 6, 16, 17), now)
+        self.assert_range('since 2 minutes ago', datetime(2017, 6, 16, 19, 35), now)
+        self.assert_range('since 2 seconds ago', datetime(2017, 6, 16, 19, 37, 20), now)
+
+        # Implicit change of year, month, date etc
+        self.assert_range('since 10 months ago', datetime(2016, 4, 16), now)
+        self.assert_range('since 20 days ago', datetime(2017, 5, 27), now)
+        self.assert_range('since 20 hours ago', datetime(2017, 6, 15, 23), now)
+        self.assert_range('since 45 minutes ago', datetime(2017, 6, 16, 18, 52), now)
+        self.assert_range('since 45 seconds ago', datetime(2017, 6, 16, 19, 36, 37), now)
+
+        # TODO Error cases such as "Since tomorrow"
+
 
 def main():
     os.environ['TZ'] = 'UTC'

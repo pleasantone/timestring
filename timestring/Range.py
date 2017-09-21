@@ -3,19 +3,16 @@ import pytz
 from copy import copy
 from datetime import datetime, timedelta
 
-from timestring.Date import Date
+from timestring.Date import Date, CONTEXT_PAST, CONTEXT_FUTURE
 from timestring import TimestringInvalid
 from timestring.timestring_re import TIMESTRING_RE
-from timestring.utils import get_timezone_time
+
 
 try:
     unicode
 except NameError:
     unicode = str
     long = int
-
-CONTEXT_PAST = -1
-CONTEXT_FUTURE = 1
 
 
 class Range(object):
@@ -167,6 +164,10 @@ class Range(object):
 
                         end = start + di
 
+                elif group['since']:
+                    start = Date(res.string, offset=offset, tz=tz, context=CONTEXT_PAST)
+                    end = now
+
                 elif group['relative_day'] or group['weekday']:
                     start = Date(res.string, offset=offset, tz=tz)
                     end = start + '1 day'
@@ -203,7 +204,9 @@ class Range(object):
                 if not isinstance(start, Date):
                     start = Date(now)
 
-                if group['time_2']:
+                if group['since']:
+                    end = now
+                elif group['time_2']:
                     temp = Date(res.string, offset=offset, tz=tz).date
                     start = start.replace(hour=temp.hour,
                                           minute=temp.minute,
@@ -229,7 +232,6 @@ class Range(object):
                         start = now
             else:
                 raise TimestringInvalid("Invalid timestring request")
-
 
             if end is None:
                 # no end provided, so assume 24 hours

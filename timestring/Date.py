@@ -45,10 +45,13 @@ DAYTIMES = dict(
     nighttime=21,
     midnight=24
 )
+CONTEXT_PAST = -1
+CONTEXT_FUTURE = 1
 
 
 class Date(object):
-    def __init__(self, date=None, offset=None, start_of_week=None, tz=None, verbose=False):
+    def __init__(self, date=None, offset=None, start_of_week=None, tz=None,
+                 verbose=False, context=None):
         self._original = date
         if tz:
             tz = pytz.timezone(str(tz))
@@ -90,10 +93,11 @@ class Date(object):
 
                 date = dict((k, v if type(v) is str else v) for k, v in date.items() if v)
 
+            now = datetime.now(tz)
+            new_date = copy(now)
+
             # TODO Refactor
             if isinstance(date, dict):  # This will always be True
-                now = datetime.now(tz)
-                new_date = copy(now)
                 delta = date.get('delta') or date.get('delta_2')
                 num = date.get('num')
                 ref = date.get('ref')
@@ -104,7 +108,7 @@ class Date(object):
                 # Number of (days|...) [ago]
                 elif num and delta:
                     delta = delta.lower()
-                    if date.get('ago') or ref == 'last':
+                    if date.get('ago') or context == CONTEXT_PAST or ref in ['last', 'past', 'previous', 'prev']:
                         sign = -1
                     elif date.get('in') or date.get('from_now') or ref == 'next':
                         sign = 1
@@ -164,7 +168,7 @@ class Date(object):
                     if iso:
                         if ref in ['next', 'upcoming']:
                             days = iso - new_date.isoweekday() + (7 if iso <= new_date.isoweekday() else 0)
-                        elif ref in ['last', 'previous', 'prev']:
+                        elif ref in ['last', 'previous', 'prev'] or context == CONTEXT_PAST:
                             days = iso - new_date.isoweekday() - (7 if iso >= new_date.isoweekday() else 0)
                         else:
                             days = iso - new_date.isoweekday() + (7 if iso < new_date.isoweekday() else 0)
@@ -195,11 +199,13 @@ class Date(object):
                             raise TimestringInvalid('Month not in range 1..12:' + month_)
                     else:
                         month_ord = MONTH_ORDINALS.get(month_, new_date.month)
+
                     new_date = new_date.replace(month=int(month_ord))
+
                     if ref in ['next', 'upcoming']:
                         if month_ord <= now.month:
                             new_date = new_date.replace(year=new_date.year + 1)
-                    elif ref in ['last', 'previous', 'prev']:
+                    elif ref in ['last', 'previous', 'prev'] or context == CONTEXT_PAST:
                         if month_ord >= now.month:
                             new_date = new_date.replace(year=new_date.year - 1)
                     elif month_ord < now.month and not year:
