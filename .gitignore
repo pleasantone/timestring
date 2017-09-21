@@ -22,3 +22,6 @@ Watch
 _.py
 htmlcov
 .coverage
+
+# Project files
+.idea
