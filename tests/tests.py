@@ -237,7 +237,7 @@ class T(unittest.TestCase):
         self.assertEqual(len(Range('10 s')), 10)
         self.assertEqual(len(Range('10s')), 10)
 
-    def test_dow(self):
+    def test_weekdays(self):
         now = datetime.now()
         hour_in_seconds = 24 * 60 * 60
         for x, day in enumerate(('monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday')):

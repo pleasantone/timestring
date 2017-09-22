@@ -3,19 +3,16 @@ import pytz
 from copy import copy
 from datetime import datetime, timedelta
 
-from timestring.Date import Date
+from timestring.Date import Date, CONTEXT_PAST, CONTEXT_FUTURE
 from timestring import TimestringInvalid
 from timestring.timestring_re import TIMESTRING_RE
-from timestring.utils import get_timezone_time
+
 
 try:
     unicode
 except NameError:
     unicode = str
     long = int
-
-CONTEXT_PAST = -1
-CONTEXT_FUTURE = 1
 
 
 class Range(object):
@@ -129,7 +126,7 @@ class Range(object):
 
                     # "1 year", "10 days" till now
                     elif group['num']:
-                        end = start - group['main']
+                        end = start - group['duration']
 
                     # this                             [   x  ]
                     elif group['ref'] in ['this', 'current', None]:
@@ -167,21 +164,12 @@ class Range(object):
 
                         end = start + di
 
-                elif group['day_2']:
-                    # Relative day: "today" etc
-                    # Week day: "Monday" etc
-                    start = Date(group['day_2'], offset=offset, tz=tz)
-                    start = start.replace(hour=0, minute=0, second=0)
-                    if group['ref'] in ['last', 'prev', 'previous']:
-                        start -= '1 week'
-                    elif group['ref'] in ['next', 'upcoming'] and start.weekday == now.isoweekday():
-                        start += '1 week'
-                    end = start + '1 day'
+                elif group['since']:
+                    start = Date(res.string, offset=offset, tz=tz, context=CONTEXT_PAST)
+                    end = now
 
-                elif group['day_3']:
-                    # "Day after tomorrow", "Day after yesterday"
-                    start = Date(group['day_3'], offset=offset, tz=tz)
-                    start = start.replace(hour=0, minute=0, second=0)
+                elif group['relative_day'] or group['weekday']:
+                    start = Date(res.string, offset=offset, tz=tz)
                     end = start + '1 day'
 
                 elif group.get('month_1'):
@@ -216,7 +204,9 @@ class Range(object):
                 if not isinstance(start, Date):
                     start = Date(now)
 
-                if group['time_2']:
+                if group['since']:
+                    end = now
+                elif group['time_2']:
                     temp = Date(res.string, offset=offset, tz=tz).date
                     start = start.replace(hour=temp.hour,
                                           minute=temp.minute,
@@ -242,7 +232,6 @@ class Range(object):
                         start = now
             else:
                 raise TimestringInvalid("Invalid timestring request")
-
 
             if end is None:
                 # no end provided, so assume 24 hours

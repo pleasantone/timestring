@@ -76,14 +76,10 @@ def parse(string):
         for k,v in matches.items():
             if v:
                 arg = k.split('_', 1)[0]
-                if arg in ('year', 'month', 'day', 'hour', 'minute', 'second'):
+                if arg in ('year', 'month', 'weekday', 'hour', 'minute', 'second'):
                     result.setdefault(arg, getattr(date, arg))
-
-        if result.get('day'):
-            result['weekday'] = date.weekday
-
         return result
-    except:
+    except Exception as e:
         return None
 
 
