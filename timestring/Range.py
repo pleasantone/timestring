@@ -3,8 +3,9 @@ import pytz
 from copy import copy
 from datetime import datetime, timedelta
 
-from timestring.Date import Date, CONTEXT_PAST, CONTEXT_FUTURE
-from timestring import TimestringInvalid
+from timestring.Date import Date
+from timestring import TimestringInvalid, \
+    CONTEXT_PREV, CONTEXT_NEXT, CONTEXT_PAST, CONTEXT_FUTURE
 from timestring.timestring_re import TIMESTRING_RE
 
 
@@ -26,7 +27,7 @@ class Range(object):
             tz = pytz.timezone(str(tz))
 
         if start is None:
-            raise TimestringInvalid("Range object requires a start valie")
+            raise TimestringInvalid("Range object requires a start value")
 
         if not isinstance(start, (Date, datetime)):
             start = str(start)
@@ -76,8 +77,13 @@ class Range(object):
                     return next((group.get(k) for k in keys
                                  if group.get(k) is not None),
                                 None)
+
                 if verbose:
                     print(dict(map(lambda a: (a, group.get(a)), filter(lambda a: group.get(a), group))))
+
+                if not group['this']:
+                    if group['since']:
+                        context = CONTEXT_PREV
 
                 if (group.get('delta') or group.get('delta_2')) is not None:
                     delta = (group.get('delta') or group.get('delta_2')).lower()
@@ -85,22 +91,12 @@ class Range(object):
                     start = Date("now", offset=offset, tz=tz)
                     di = "%s %s" % (str(int(group['num'] or 1)), delta)
 
-                    # "next 2 weeks", "the next hour"   x[     ][     ]
-                    if group['ref'] in ['next'] and (group['num'] or group['article']):
-                        if int(group['num'] or 1) > 1:
-                            di = "%s %s" % (str(int(group['num'] or 1)), delta)
-                        end = start + di
-
-                    # "next week", "upcoming 3 weeks"   (  x  )[      ]
-                    elif group['ref'] in ['next', 'upcoming']:
-                        this = Range('this ' + delta, offset=offset, tz=tz)
-                        start = this.end
-                        end = start + di
-
                     # ago                               [     ](     )x
                     # from now                         x(     )[     ]
                     # in                               x(     )[     ]
-                    elif group['ago'] or group['from_now'] or group['in']:
+                    if group['ago'] or group['from_now'] or group['in']:
+                        if verbose:
+                            print('ago or from_now or in')
                         start = Date(res.string)
                         if not re.match('(hour|minute|second)s?', delta):
                             start = start.replace(hour=0, minute=0, second=0)
@@ -114,22 +110,46 @@ class Range(object):
                         else:
                             end = start + '1 second'
 
+                    # "next 2 weeks", "the next hour"   x[     ][     ]
+                    elif group['next'] and (group['num'] or group['article']):
+                        if verbose:
+                            print('next and (num or article)')
+                        if int(group['num'] or 1) > 1:
+                            di = "%s %s" % (str(int(group['num'] or 1)), delta)
+                        end = start + di
+
+                    # "next week", "upcoming 3 weeks"   (  x  )[      ]
+                    elif group['next'] or (not group['this'] and context == CONTEXT_NEXT):
+                        if verbose:
+                            print('next or (not this and CONTEXT_NEXT)')
+                        this = Range('this ' + delta, offset=offset, tz=tz)
+                        start = this.end
+                        end = start + di
+
                     # "last 2 weeks", "the last hour"   [     ][     ]x
-                    elif group['ref'] in ['last'] and (group['num'] or group['article']):
+                    elif group['prev'] and (group['num'] or group['article']):
+                        if verbose:
+                            print('prev and (num or article)')
                         end = start - di
 
                     # "last week", "previous 3 weeks"   [     ](  x  )
-                    elif group['ref'] in ['last', 'previous', '']:
+                    elif group['prev']:
+                        if verbose:
+                            print('prev')
                         this = Range('this ' + delta, offset=offset, tz=tz)
                         start = this.start - di
                         end = this.end - di
 
                     # "1 year", "10 days" till now
                     elif group['num']:
+                        if verbose:
+                            print('num')
                         end = start - group['duration']
 
                     # this                             [   x  ]
-                    elif group['ref'] in ['this', 'current', None]:
+                    elif group['this'] or not group['recurrence']:
+                        if verbose:
+                            print('this or not recurrence')
 
                         if delta.startswith('y'):
                             start = Date(datetime(now.year, 1, 1), offset=offset, tz=tz)
@@ -164,29 +184,27 @@ class Range(object):
 
                         end = start + di
 
-                elif group['since']:
-                    start = Date(res.string, offset=offset, tz=tz, context=CONTEXT_PAST)
-                    end = now
-
                 elif group['relative_day'] or group['weekday']:
-                    start = Date(res.string, offset=offset, tz=tz)
+                    if verbose:
+                        print('relative_day or weekday')
+                    start = Date(res.string, offset=offset, tz=tz, context=context)
                     end = start + '1 day'
 
                 elif group.get('month_1'):
+                    if verbose:
+                        print('month_1')
                     if group['year_5']:
-                        start = Date(start, offset=offset, tz=tz)
+                        start = Date(start, offset=offset, tz=tz, context=context)
                         start = start.replace(hour=0, minute=0, second=0)
                     else:
                         # A whole month of this, previous or next year
-                        start = Date(group['month_1'], offset=offset, tz=tz)
+                        start = Date(res.string, offset=offset, tz=tz, context=context)
                         start = start.replace(hour=0, minute=0, second=0)
-                        if group['ref'] in ['last', 'prev', 'previous', 'past']:
-                            start -= '1 year'
-                        elif group['ref'] in ['next', 'upcoming'] and start.weekday == now.weekday:
-                            start += '1 year'
                     end = start + '1 month'
 
                 elif group['date_5'] or group['date_6']:
+                    if verbose:
+                        print('date_5 or date_6')
                     start = Date(res.string, offset=offset, tz=tz)
                     year = g('year', 'year_2', 'year_3', 'year_4', 'year_5', 'year_6')
                     month = g('month', 'month_2', 'month_3', 'month_4', 'month_5')
@@ -204,9 +222,9 @@ class Range(object):
                 if not isinstance(start, Date):
                     start = Date(now)
 
-                if group['since']:
-                    end = now
-                elif group['time_2']:
+                if group['time_2']:
+                    if verbose:
+                        print('time_2')
                     temp = Date(res.string, offset=offset, tz=tz).date
                     start = start.replace(hour=temp.hour,
                                           minute=temp.minute,
@@ -225,11 +243,15 @@ class Range(object):
                     else:
                         end = start
 
+                if group['since']:
+                    end = now
+
                 if start <= now <= end:
                     if context == CONTEXT_PAST:
                         end = now
                     elif context == CONTEXT_FUTURE:
                         start = now
+
             else:
                 raise TimestringInvalid("Invalid timestring request")
 

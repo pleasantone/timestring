@@ -6,7 +6,7 @@ from copy import copy
 from datetime import datetime, timedelta
 
 from timestring.text2num import text2num
-from timestring import TimestringInvalid
+from timestring import TimestringInvalid, CONTEXT_PREV, CONTEXT_NEXT
 from timestring.timestring_re import TIMESTRING_RE
 from timestring.utils import get_timezone_time
 
@@ -45,8 +45,6 @@ DAYTIMES = dict(
     nighttime=21,
     midnight=24
 )
-CONTEXT_PAST = -1
-CONTEXT_FUTURE = 1
 
 
 class Date(object):
@@ -100,7 +98,6 @@ class Date(object):
             if isinstance(date, dict):  # This will always be True
                 delta = date.get('delta') or date.get('delta_2')
                 num = date.get('num')
-                ref = date.get('ref')
 
                 if date.get('unixtime'):
                     new_date = datetime.fromtimestamp(int(date.get('unixtime')))
@@ -108,9 +105,9 @@ class Date(object):
                 # Number of (days|...) [ago]
                 elif num and delta:
                     delta = delta.lower()
-                    if date.get('ago') or context == CONTEXT_PAST or ref in ['last', 'past', 'previous', 'prev']:
+                    if date.get('ago') or context == CONTEXT_PREV or date.get('prev'):
                         sign = -1
-                    elif date.get('in') or date.get('from_now') or ref == 'next':
+                    elif date.get('in') or date.get('from_now') or context == CONTEXT_NEXT or date.get('next'):
                         sign = 1
                     else:
                         raise TimestringInvalid('Missing relationship such as "ago" or "from now"')
@@ -166,9 +163,9 @@ class Date(object):
                     new_date = new_date.replace(hour=0, minute=0, second=0, microsecond=0)
                     iso = WEEKDAY_ORDINALS.get(weekday)
                     if iso:
-                        if ref in ['next', 'upcoming']:
+                        if date.get('next') or context == CONTEXT_NEXT:
                             days = iso - new_date.isoweekday() + (7 if iso <= new_date.isoweekday() else 0)
-                        elif ref in ['last', 'previous', 'prev'] or context == CONTEXT_PAST:
+                        elif date.get('prev') or context == CONTEXT_PREV:
                             days = iso - new_date.isoweekday() - (7 if iso >= new_date.isoweekday() else 0)
                         else:
                             days = iso - new_date.isoweekday() + (7 if iso < new_date.isoweekday() else 0)
@@ -182,7 +179,7 @@ class Date(object):
                 # !year
                 year = [int(CLEAN_NUMBER.sub('', date[key])) for key in ('year', 'year_2', 'year_3', 'year_4', 'year_5', 'year_6') if date.get(key)]
                 if year:
-                    if ref:
+                    if date.get('recurrence'):
                         TimestringInvalid('"next" %s'% year)
                     year = max(year)
                     if len(str(year)) != 4:
@@ -202,10 +199,10 @@ class Date(object):
 
                     new_date = new_date.replace(month=int(month_ord))
 
-                    if ref in ['next', 'upcoming']:
+                    if date.get('next') or context == CONTEXT_NEXT:
                         if month_ord <= now.month:
                             new_date = new_date.replace(year=new_date.year + 1)
-                    elif ref in ['last', 'previous', 'prev'] or context == CONTEXT_PAST:
+                    elif date.get('prev') or context == CONTEXT_PREV:
                         if month_ord >= now.month:
                             new_date = new_date.replace(year=new_date.year - 1)
                     elif month_ord < now.month and not year:
@@ -214,7 +211,7 @@ class Date(object):
                 # !day
                 day = [date.get(key) for key in ('date', 'date_2', 'date_3', 'date_4') if date.get(key)]
                 if day:
-                    if ref:
+                    if date.get('recurrence'):
                         TimestringInvalid('"next" %s'% day)
                     new_date = new_date.replace(day=int(max(day)))
 

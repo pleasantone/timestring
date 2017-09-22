@@ -1,11 +1,12 @@
-from datetime import datetime, date, timedelta
+from datetime import datetime, timedelta
 import os
 import time
 import unittest
 
 from freezegun import freeze_time
 
-from timestring.Range import Range, CONTEXT_PAST, CONTEXT_FUTURE
+from timestring.Range import Range
+from timestring import CONTEXT_PAST, CONTEXT_FUTURE
 
 
 @freeze_time('2017-06-16 19:37:22')
@@ -16,12 +17,14 @@ class RangeTest(unittest.TestCase):
 
         self.assertEqual(_range.start,
                          expected_start,
-                        '\n          Text: ' + range_str
+                         '\n           Now: ' + str(datetime.now())
+                         + '\n          Text: ' + range_str
                          + '\nExpected start: ' + str(expected_start)
                          + '\n  Actual start: ' + str(_range.start))
         self.assertEqual(_range.end,
                          expected_end,
-                         '\n        Text: ' + range_str
+                         '\n           Now: ' + str(datetime.now())
+                         + '\n        Text: ' + range_str
                          + '\nExpected end: ' + str(expected_end)
                          + '\n  Actual end: ' + str(_range.end))
 
@@ -686,7 +689,7 @@ class RangeTest(unittest.TestCase):
         self.assert_range('since 45 minutes ago', datetime(2017, 6, 16, 18, 52), now)
         self.assert_range('since 45 seconds ago', datetime(2017, 6, 16, 19, 36, 37), now)
 
-        # TODO Error cases such as "Since tomorrow"
+        # TODO "Since tomorrow" etc: error or guess or infinity or unknown
 
 
 def main():
