@@ -6,7 +6,7 @@ TIMESTRING_RE = re.compile(re.sub('[\t\n\s]', '', re.sub('(\(\?\#[^\)]+\))', '',
             (?P<unixtime>\d{10})
             |
             (
-                (\b((?P<since>since))\s+)?
+                (\b((?P<since>since)|(?P<until>until|till)|(?P<by>by))\s+)?
                 (
                     (\b(?P<article>the\s)\s+)?
                     \b(?P<relative_day>day\s+before\s+yesterday|day\s+after\s+tomorrow|today|now|yesterday|tomorrow)\b

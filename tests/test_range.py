@@ -691,6 +691,43 @@ class RangeTest(unittest.TestCase):
 
         # TODO "Since tomorrow" etc: error or guess or infinity or unknown
 
+    def test_until(self):
+        now = datetime.now()
+        self.assert_range('until next may', now, datetime(2018, 5, 1))
+        self.assert_range('until next Friday', now, datetime(2017, 6, 23))
+        self.assert_range('until next Saturday', now, datetime(2017, 6, 17))
+        self.assert_range('until next Thursday', now, datetime(2017, 6, 22))
+        self.assert_range('until next year', now, datetime(2018, 1, 1))
+        self.assert_range('until next month', now, datetime(2017, 7, 1))
+        self.assert_range('until next week', now, datetime(2017, 6, 19))
+        self.assert_range('until tomorrow', now, datetime(2017, 6, 17))
+
+        self.assert_range('until 2018', now, datetime(2018, 1, 1))
+        self.assert_range('until April', now, datetime(2018, 4, 1))
+        self.assert_range('until April 2018', now, datetime(2018, 4, 1))
+        self.assert_range('until April 11, 2018', now, datetime(2018, 4, 11))
+        self.assert_range('until Friday', now, datetime(2017, 6, 23))
+        self.assert_range('until Saturday', now, datetime(2017, 6, 17))
+        self.assert_range('until Thursday', now, datetime(2017, 6, 22))
+
+        self.assert_range('until 2 years from now', now, datetime(2019, 6, 16))
+        self.assert_range('until 2 months from now', now, datetime(2017, 8, 16))
+        self.assert_range('until 2 weeks from now', now, datetime(2017, 6, 30))
+        self.assert_range('until 2 days from now', now, datetime(2017, 6, 18))
+        self.assert_range('until 2 hours from now', now, datetime(2017, 6, 16, 21))
+        self.assert_range('until 2 minutes from now', now, datetime(2017, 6, 16, 19, 39))
+        self.assert_range('until 2 seconds from now', now, datetime(2017, 6, 16, 19, 37, 24))
+
+        # Implicit change of year, month, date etc
+        self.assert_range('until 10 months from now', now, datetime(2018, 4, 16))
+        self.assert_range('until 20 days from now', now, datetime(2017, 7, 6))
+        self.assert_range('until 20 hours from now', now, datetime(2017, 6, 17, 15))
+        self.assert_range('until 45 minutes from now', now, datetime(2017, 6, 16, 20, 22))
+        self.assert_range('until 45 seconds from now', now, datetime(2017, 6, 16, 19, 38, 7))
+        #
+        # # TODO "Until yesterday" etc: error or guess or infinity or unknown
+        # # TODO "Until the start of today" vs "Until the end of today"
+
 
 def main():
     os.environ['TZ'] = 'UTC'

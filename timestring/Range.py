@@ -84,6 +84,8 @@ class Range(object):
                 if not group['this']:
                     if group['since']:
                         context = CONTEXT_PREV
+                    if group['until']:
+                        context = CONTEXT_NEXT
 
                 if (group.get('delta') or group.get('delta_2')) is not None:
                     delta = (group.get('delta') or group.get('delta_2')).lower()
@@ -245,6 +247,9 @@ class Range(object):
 
                 if group['since']:
                     end = now
+                elif group['until']:
+                    end = start
+                    start = now
 
                 if start <= now <= end:
                     if context == CONTEXT_PAST:

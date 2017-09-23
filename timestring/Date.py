@@ -199,14 +199,15 @@ class Date(object):
 
                     new_date = new_date.replace(month=int(month_ord))
 
-                    if date.get('next') or context == CONTEXT_NEXT:
-                        if month_ord <= now.month:
+                    if year == []:
+                        if date.get('next') or context == CONTEXT_NEXT:
+                            if month_ord <= now.month:
+                                new_date = new_date.replace(year=new_date.year + 1)
+                        elif date.get('prev') or context == CONTEXT_PREV:
+                            if month_ord >= now.month:
+                                new_date = new_date.replace(year=new_date.year - 1)
+                        elif month_ord < now.month and not year:
                             new_date = new_date.replace(year=new_date.year + 1)
-                    elif date.get('prev') or context == CONTEXT_PREV:
-                        if month_ord >= now.month:
-                            new_date = new_date.replace(year=new_date.year - 1)
-                    elif month_ord < now.month and not year:
-                        new_date = new_date.replace(year=new_date.year + 1)
 
                 # !day
                 day = [date.get(key) for key in ('date', 'date_2', 'date_3', 'date_4') if date.get(key)]
