@@ -195,12 +195,10 @@ class Range(object):
                 elif group.get('month_1'):
                     if verbose:
                         print('month_1')
+                    start = Date(res.string, offset=offset, tz=tz, context=context)
                     if group['year_5']:
-                        start = Date(start, offset=offset, tz=tz, context=context)
                         start = start.replace(hour=0, minute=0, second=0)
                     else:
-                        # A whole month of this, previous or next year
-                        start = Date(res.string, offset=offset, tz=tz, context=context)
                         start = start.replace(hour=0, minute=0, second=0)
                     end = start + '1 month'
 
