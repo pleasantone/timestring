@@ -196,10 +196,7 @@ class Range(object):
                     if verbose:
                         print('month_1')
                     start = Date(res.string, offset=offset, tz=tz, context=context)
-                    if group['year_5']:
-                        start = start.replace(hour=0, minute=0, second=0)
-                    else:
-                        start = start.replace(hour=0, minute=0, second=0)
+                    start = start.replace(hour=0, minute=0, second=0)
                     end = start + '1 month'
 
                 elif group['date_5'] or group['date_6']:
