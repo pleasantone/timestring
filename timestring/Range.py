@@ -4,8 +4,7 @@ from copy import copy
 from datetime import datetime, timedelta
 
 from timestring.Date import Date
-from timestring import TimestringInvalid, \
-    CONTEXT_PREV, CONTEXT_NEXT, CONTEXT_PAST, CONTEXT_FUTURE
+from timestring import TimestringInvalid, Context
 from timestring.timestring_re import TIMESTRING_RE
 
 
@@ -83,9 +82,9 @@ class Range(object):
 
                 if not group['this']:
                     if group['since']:
-                        context = CONTEXT_PREV
+                        context = Context.PREV
                     if group['until']:
-                        context = CONTEXT_NEXT
+                        context = Context.NEXT
 
                 if (group.get('delta') or group.get('delta_2')) is not None:
                     delta = (group.get('delta') or group.get('delta_2')).lower()
@@ -121,9 +120,9 @@ class Range(object):
                         end = start + di
 
                     # "next week", "upcoming 3 weeks"   (  x  )[      ]
-                    elif group['next'] or (not group['this'] and context == CONTEXT_NEXT):
+                    elif group['next'] or (not group['this'] and context == Context.NEXT):
                         if verbose:
-                            print('next or (not this and CONTEXT_NEXT)')
+                            print('next or (not this and Context.NEXT)')
                         this = Range('this ' + delta, offset=offset, tz=tz)
                         start = this.end
                         end = start + di
@@ -247,9 +246,9 @@ class Range(object):
                     start = now
 
                 if start <= now <= end:
-                    if context == CONTEXT_PAST:
+                    if context == Context.PAST:
                         end = now
-                    elif context == CONTEXT_FUTURE:
+                    elif context == Context.FUTURE:
                         start = now
 
             else:
