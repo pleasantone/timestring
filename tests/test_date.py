@@ -1,28 +1,48 @@
-from datetime import datetime, timedelta
 import os
 import time
 import unittest
+from datetime import datetime, timedelta
 
+from ddt import ddt
 from freezegun import freeze_time
 
-from timestring import Date
+from timestring import Date, TimestringInvalid
 
 
 @freeze_time('2017-06-16 19:37:22')
-class DateTest(unittest.TestCase):
-    def assert_date(self, date_str, expected: datetime):
-        _date = Date(date_str)
+@ddt
+class T(unittest.TestCase):
+    def assert_date(self, date_str, expected: datetime, **kw):
+        _date = Date(date_str, **kw)
 
         self.assertEqual(_date,
                          expected,
-                         '\n    Text: ' + date_str
+                         '\n     Now: ' + str(datetime.now())
+                         + '\n    Text: ' + date_str
                          + '\nExpected: ' + str(expected)
                          + '\n  Actual: ' + str(_date))
+
+    def test_date_formats(self):
+        for date_str in [
+            'September 5, 2012',
+            '2012 5 September',
+            'sep 5 2012',
+            'sept 5 2012',
+            "sep 5th, '12",
+            '5th September, 2012',
+            '2012/9/5',
+            '2012-09-5T',
+            '9/5/2012',
+            # TODO: 5th of September, 2012
+        ]:
+            self.assert_date(date_str, datetime(2012, 9, 5))
+
+        # TODO: 13/5/2012
 
     def test_time_formats(self):
         self.assert_date('november 5 @ 10pm', datetime(2017, 11, 5, 22, 0, 0))
 
-        for time_str in ['11am', '11 AM', '11a', "11 o'clock", "11 oclock",]:
+        for time_str in ['11am', '11 AM', '11a', "11 o'clock", '11 oclock',]:
             self.assert_date(time_str, datetime(2017, 6, 16, 11, 0, 0))
             # TODO: at 11
             # TODO: eleven o'clock
@@ -33,6 +53,215 @@ class DateTest(unittest.TestCase):
             # TODO: dec 31 11pm
             # TODO: 11pm, dec 31
             # TODO: dec 31 @ 11pm
+
+    def test_date_and_time(self):
+        now = datetime.now()
+
+        date = Date('01/10/2015 at 7:30pm')
+        self.assertEqual(date.year, 2015)
+        self.assertEqual(date.month, 1)
+        self.assertEqual(date.day, 10)
+        self.assertEqual(date.hour, 19)
+        self.assertEqual(date.minute, 30)
+
+        date = Date('may 23rd, 1988 at 6:24 am')
+        self.assertEqual(date.year, 1988)
+        self.assertEqual(date.month, 5)
+        self.assertEqual(date.day, 23)
+        self.assertEqual(date.hour, 6)
+        self.assertEqual(date.minute, 24)
+
+        date = Date('2012 feb 2 1:13PM')
+        self.assertEqual(date.year, 2012)
+        self.assertEqual(date.month, 2)
+        self.assertEqual(date.day, 2)
+        self.assertEqual(date.hour, 13)
+        self.assertEqual(date.minute, 13)
+
+        date = Date('6:41 am on sept 8 2012')
+        self.assertEqual(date.year, 2012)
+        self.assertEqual(date.month, 9)
+        self.assertEqual(date.day, 8)
+        self.assertEqual(date.hour, 6)
+        self.assertEqual(date.minute, 41)
+
+        date = Date('2013-09-10T10:45:50')
+        self.assertEqual(date.year, 2013)
+        self.assertEqual(date.month, 9)
+        self.assertEqual(date.day, 10)
+        self.assertEqual(date.hour, 10)
+        self.assertEqual(date.minute, 45)
+        self.assertEqual(date.second, 50)
+
+        date = Date('August 25th, 2014 12:30 PM')
+        self.assertEqual(date.year, 2014)
+        self.assertEqual(date.month, 8)
+        self.assertEqual(date.day, 25)
+        self.assertEqual(date.hour, 12)
+        self.assertEqual(date.minute, 30)
+        self.assertEqual(date.second, 0)
+
+        date = Date('may 23, 2018 1 pm')
+        self.assertEqual(date.year, 2018)
+        self.assertEqual(date.month, 5)
+        self.assertEqual(date.day, 23)
+        self.assertEqual(date.hour, 13)
+        self.assertEqual(date.minute, 0)
+        self.assertEqual(date.second, 0)
+
+        date = Date('1-2-13 2 am')
+        self.assertEqual(date.year, 2013)
+        self.assertEqual(date.month, 1)
+        self.assertEqual(date.day, 2)
+        self.assertEqual(date.hour, 2)
+        self.assertEqual(date.minute, 0)
+        self.assertEqual(date.second, 0)
+
+        date = Date("dec 15th '01 at 6:25:01 am")
+        self.assertEqual(date.year, 2001)
+        self.assertEqual(date.month, 12)
+        self.assertEqual(date.day, 15)
+        self.assertEqual(date.hour, 6)
+        self.assertEqual(date.minute, 25)
+        self.assertEqual(date.second, 1)
+
+        self.assertEqual(Date('2012').year, 2012)
+        self.assertEqual(Date('January 2013').month, 1)
+        self.assertEqual(Date('feb 2011').month, 2)
+        self.assertEqual(Date('05/23/2012').month, 5)
+        self.assertEqual(Date('01/10/2015 at 7:30pm').month, 1)
+        self.assertEqual(Date('today').day, now.day)
+
+    def test_singles(self):
+        ts = 1374681560
+        for param in ts, str(ts):
+            date = Date(param)
+            self.assertEqual(date.year, 2013)
+            self.assertEqual(date.month, 7)
+            self.assertEqual(date.day, 24)
+
+        # offset timezones
+        self.assertEqual(Date('2014-03-06 15:33:43.764419-05').hour, 20)
+
+        for x in ['yestserday', 'Satruday', Exception]:
+            with self.assertRaises(TimestringInvalid):
+                Date(x)
+
+    def test_weekdays(self):
+        now = datetime.now()
+        for x, day in enumerate(('monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday')):
+            d = Date(day)
+            self.assertLess(d.date - now, timedelta(7))
+            self.assertEqual(d.weekday, 1 + x)
+
+    def test_offset(self):
+        now = datetime.now()
+        self.assert_date(
+            'now',
+            datetime(2017, 6, 16, 19, 3, 22),
+            offset=dict(minute=3)
+        )
+        self.assert_date(
+            'today',
+            datetime(2017, 6, 5, 4, 3, 2, 1),
+            offset=dict(day=5, hour=4, minute=3, second=2, microsecond=1)
+        )
+        self.assert_date(
+            'yesterday',
+            datetime(2017, 6, 1, 2, 3, 4, 5),
+            offset=dict(day=1, hour=2, minute=3, second=4, microsecond=5)
+        )
+        self.assertEqual(Date('august 25th 7:30am', offset=dict(hour=10)).hour, 7)
+
+    def test_tz(self):
+        self.assertEqual(Date('today', tz='US/Central').tz.zone, 'US/Central')
+
+    def test_plus(self):
+        date_1 = Date('jan 10')
+        date_1.microsecond = 1
+        date_2 = Date('jan 11')
+        date_2.microsecond = 1
+        self.assertEqual(date_1 + '1 day', date_2)
+
+        date1 = Date('october 18, 2013 10:04:32 PM')
+        date2 = date1 + '10 seconds'
+        self.assertEqual(date1.second + 10, date2.second)
+
+    def test_minus(self):
+        date_1 = Date('jan 10')
+        date_1.microsecond = 1
+        date_2 = Date('jan 5')
+        date_2.microsecond = 1
+        self.assertEqual(Date(date_1) - '5 days', date_2)
+
+    def test_adjustment(self):
+        d = Date('Jan 1st 2014 at 10 am')
+        self.assertEqual(d.year, 2014)
+        self.assertEqual(d.month, 1)
+        self.assertEqual(d.day, 1)
+        self.assertEqual(d.hour, 10)
+        self.assertEqual(d.minute, 0)
+        self.assertEqual(d.second, 0)
+
+        d.hour = 5
+        d.day = 15
+        d.month = 4
+        d.year = 2013
+        d.minute = 40
+        d.second = 14
+        d.microsecond = 10001
+
+        self.assertEqual(d.year, 2013)
+        self.assertEqual(d.month, 4)
+        self.assertEqual(d.day, 15)
+        self.assertEqual(d.hour, 5)
+        self.assertEqual(d.minute, 40)
+        self.assertEqual(d.second, 14)
+        self.assertEqual(str(d.date), '2013-04-15 05:40:14.010001')
+
+    def test_next_prev(self):
+        # Past month
+        self.assert_date('nov', datetime(2017, 11, 1))
+        self.assert_date('this nov', datetime(2017, 11, 1))
+        self.assert_date('last nov', datetime(2016, 11, 1))
+        self.assert_date('previous nov', datetime(2016, 11, 1))
+        self.assert_date('next nov', datetime(2017, 11, 1))
+        self.assert_date('upcoming nov', datetime(2017, 11, 1))
+
+        # Future month
+        self.assert_date('feb', datetime(2018, 2, 1))
+        self.assert_date('this feb', datetime(2018, 2, 1), )
+        self.assert_date('last feb', datetime(2017, 2, 1))
+        self.assert_date('previous feb', datetime(2017, 2, 1))
+        self.assert_date('next feb', datetime(2018, 2, 1))
+        self.assert_date('upcoming feb', datetime(2018, 2, 1))
+
+        # Current month
+        self.assert_date('june', datetime(2017, 6, 1))
+        self.assert_date('this june', datetime(2017, 6, 1))
+        self.assert_date('last june', datetime(2016, 6, 1))
+        self.assert_date('next june', datetime(2018, 6, 1))
+
+        # Past weekday
+        self.assert_date('sun', datetime(2017, 6, 18))
+        self.assert_date('this sun', datetime(2017, 6, 18))
+        self.assert_date('last sun', datetime(2017, 6, 11))
+        self.assert_date('previous sun', datetime(2017, 6, 11))
+        self.assert_date('next sun', datetime(2017, 6, 18))
+        self.assert_date('upcoming sun', datetime(2017, 6, 18))
+
+        # Future weekday
+        self.assert_date('wed', datetime(2017, 6, 21))
+        self.assert_date('last wed', datetime(2017, 6, 14))
+        self.assert_date('previous wed', datetime(2017, 6, 14))
+        self.assert_date('next wed', datetime(2017, 6, 21))
+        self.assert_date('upcoming wed', datetime(2017, 6, 21))
+
+        # Current weekday
+        self.assert_date('fri', datetime(2017, 6, 16))
+        self.assert_date('this fri', datetime(2017, 6, 16))
+        self.assert_date('last fri', datetime(2017, 6, 9))
+        self.assert_date('next fri', datetime(2017, 6, 23))
 
     def test_ago(self):
         self.assert_date('2 years ago', datetime(2015, 6, 16, 19, 37, 22))
@@ -66,7 +295,7 @@ class DateTest(unittest.TestCase):
         self.assert_date('45 minutes from now', datetime(2017, 6, 16, 20, 22, 22))
         self.assert_date('45 seconds from now', datetime(2017, 6, 16, 19, 38, 7))
 
-    def test_in(self):  # Same as "from now"
+    def test_in(self):  # Same as 'from now'
         self.assert_date('in 2 years', datetime(2019, 6, 16, 19, 37, 22))
         self.assert_date('in 2 months', datetime(2017, 8, 16, 19, 37, 22))
         self.assert_date('in 2 weeks', datetime(2017, 6, 30, 19, 37, 22))
