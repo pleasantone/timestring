@@ -1,7 +1,7 @@
 import re
 import pytz
 from copy import copy
-from datetime import datetime, timedelta
+from datetime import datetime
 
 from timestring.Date import Date
 from timestring import TimestringInvalid, Context
@@ -157,40 +157,35 @@ class Range(object):
                     elif group['this'] or not group['recurrence']:
                         if verbose:
                             print('this or not recurrence')
+                        start = Date(res.string, tz=tz)
 
                         if delta.startswith('y'):
-                            start = Date(datetime(now.year, 1, 1), offset=offset, tz=tz)
+                            start = start.replace(month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
 
-                        # month
                         elif delta.startswith('mo'):
-                            start = Date(datetime(now.year, now.month, 1), offset=offset, tz=tz)
+                            start = start.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
 
-                        # week
                         elif delta.startswith('w'):
-                            start = Date(res.string, tz=tz)
                             day = start.day + week_start % 7 - start.weekday
                             start = start.replace(day=day, hour=0, minute=0, second=0, microsecond=0)
-                            start = start.replace(**offset or {})
 
-                        # day
                         elif delta.startswith('d'):
-                            start = Date("today", offset=offset, tz=tz)
+                            start = start.replace(hour=0, minute=0, second=0, microsecond=0)
 
-                        # hour
                         elif delta.startswith('h'):
-                            start = Date("today", offset=offset, tz=tz)
+                            start = start.replace(minute=0, second=0, microsecond=0)
 
-                        # minute
                         elif delta.startswith('m'):
-                            start = Date('now', offset=offset, tz=tz)
+                            start = start.replace(second=0, microsecond=0)
 
-                        # second
                         elif delta.startswith('s'):
-                            start = Date("now", offset=offset, tz=tz)
+                            start = start.replace(microsecond=0)
 
                         else:
                             raise TimestringInvalid("Not a valid time reference")
 
+                        if offset:
+                            start = start.replace(**offset)
                         end = start + di
 
                 elif group['relative_day'] or group['weekday']:
