@@ -17,7 +17,7 @@ except NameError:
 
 
 class Range(object):
-    def __init__(self, start, end=None, offset=None, start_of_week=0, tz=None,
+    def __init__(self, start, end=None, offset=None, week_start=1, tz=None,
                  verbose=False, context=None):
         """`start` can be type <class timestring.Date> or <type str>
         """
@@ -120,11 +120,14 @@ class Range(object):
                             di = "%s %s" % (str(int(group['num'] or 1)), delta)
                         end = start + di
 
-                    # "next week", "upcoming 3 weeks"   (  x  )[      ]
+                    # "next week"                       (  x  )[      ]
                     elif group['next'] or (not group['this'] and context == CONTEXT_NEXT):
                         if verbose:
                             print('next or (not this and CONTEXT_NEXT)')
-                        this = Range('this ' + delta, offset=offset, tz=tz)
+                        this = Range('this ' + delta,
+                                     offset=offset,
+                                     tz=tz,
+                                     week_start=week_start)
                         start = this.end
                         end = start + di
 
@@ -134,11 +137,14 @@ class Range(object):
                             print('prev and (num or article)')
                         end = start - di
 
-                    # "last week", "previous 3 weeks"   [     ](  x  )
+                    # "last week"                       [     ](  x  )
                     elif group['prev']:
                         if verbose:
                             print('prev')
-                        this = Range('this ' + delta, offset=offset, tz=tz)
+                        this = Range('this ' + delta,
+                                     offset=offset,
+                                     tz=tz,
+                                     week_start=week_start)
                         start = this.start - di
                         end = this.end - di
 
@@ -162,8 +168,10 @@ class Range(object):
 
                         # week
                         elif delta.startswith('w'):
-                            d = datetime(now.year, now.month, now.day)
-                            start = Date(d - timedelta(days=d.weekday()), offset=offset)
+                            start = Date(res.string, tz=tz)
+                            day = start.day + week_start % 7 - start.weekday
+                            start = start.replace(day=day, hour=0, minute=0, second=0, microsecond=0)
+                            start = start.replace(**offset or {})
 
                         # day
                         elif delta.startswith('d'):

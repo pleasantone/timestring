@@ -12,8 +12,8 @@ from timestring import CONTEXT_PAST, CONTEXT_FUTURE
 @freeze_time('2017-06-16 19:37:22')
 class RangeTest(unittest.TestCase):
     def assert_range(self, range_str, expected_start: datetime,
-                     expected_end: datetime, context=None):
-        _range = Range(range_str, context=context)
+                     expected_end: datetime, **kw):
+        _range = Range(range_str, **kw)
 
         self.assertEqual(_range.start,
                          expected_start,
@@ -724,10 +724,70 @@ class RangeTest(unittest.TestCase):
         self.assert_range('until 20 hours from now', now, datetime(2017, 6, 17, 15))
         self.assert_range('until 45 minutes from now', now, datetime(2017, 6, 16, 20, 22))
         self.assert_range('until 45 seconds from now', now, datetime(2017, 6, 16, 19, 38, 7))
-        #
-        # # TODO "Until yesterday" etc: error or guess or infinity or unknown
-        # # TODO "Until the start of today" vs "Until the end of today"
 
+        # TODO "Until yesterday" etc: error or guess or infinity or unknown
+        # TODO "Until the start of today" vs "Until the end of today"
+
+    def test_week_start(self):
+        self.assert_range('this week',
+                          datetime(2017, 6, 11),
+                          datetime(2017, 6, 18),
+                          week_start=0)
+
+        self.assert_range('this week',
+                          datetime(2017, 6, 11),
+                          datetime(2017, 6, 18),
+                          week_start=7)
+
+        self.assert_range('this week',
+                          datetime(2017, 6, 11),
+                          datetime.now(),
+                          context=CONTEXT_PAST,
+                          week_start=0)
+
+        self.assert_range('this week',
+                          datetime.now(),
+                          datetime(2017, 6, 18),
+                          context=CONTEXT_FUTURE,
+                          week_start=0)
+
+        self.assert_range('last week',
+                          datetime(2017, 6, 4),
+                          datetime(2017, 6, 11),
+                          week_start=0)
+
+        self.assert_range('next week',
+                          datetime(2017, 6, 18),
+                          datetime(2017, 6, 25),
+                          week_start=0)
+
+        now = datetime.now()
+
+        self.assert_range('since last week',
+                          datetime(2017, 6, 4),
+                          now,
+                          week_start=0)
+
+        self.assert_range('since this week',
+                          datetime(2017, 6, 11),
+                          now,
+                          week_start=0)
+
+        self.assert_range('until next week',
+                          now,
+                          datetime(2017, 6, 18),
+                          week_start=0)
+
+        # Other time references are unchanged
+        self.assert_range('this month',
+                          datetime(2017, 6, 1, 0, 0, 0),
+                          datetime(2017, 7, 1, 0, 0, 0),
+                          week_start=0)
+
+        self.assert_range('monday',
+                          datetime(2017, 6, 19),
+                          datetime(2017, 6, 20),
+                          week_start=0)
 
 def main():
     os.environ['TZ'] = 'UTC'
