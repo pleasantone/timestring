@@ -29,14 +29,14 @@ class T(unittest.TestCase):
         self.assertTrue(
             min_start <= start <= max_start,
             '\n         Now: %s' % datetime.now()
-            + '\n          Text: %s' % range_str
+            + '\n          Text: "%s"' % range_str
             + '\nExpected start: %s += %s' % (expected_start, start_tolerance)
             + '\n  Actual start: %s' % start
         )
         self.assertTrue(
             min_end <= end <= max_end,
             '\n         Now: %s' % datetime.now()
-            + '\n        Text: %s' % range_str
+            + '\n        Text: "%s"' % range_str
             + '\nExpected end: %s += %s' % (expected_end, end_tolerance)
             + '\n  Actual end: %s' % end
         )
