@@ -1050,6 +1050,105 @@ class T(unittest.TestCase):
                           datetime(2017, 8, 1),
                           context=Context.NEXT)
 
+    def test_fractional_duration(self):
+        now = datetime.now()
+
+        self.assert_range('last 5.5 years',
+                          datetime(2017, 1, 16, 19, 37, 22),
+                          datetime(2017, 6, 16, 19, 37, 22))
+
+        self.assert_range('last 5.5 months',
+                          datetime(2017, 1, 16, 19, 37, 22),
+                          datetime(2017, 6, 16, 19, 37, 22))
+
+        self.assert_range('last 2.5 days',
+                          datetime(2017, 6, 14, 19, 37, 22),
+                          now)
+
+        self.assert_range('last 5.5 hours',
+                          datetime(2017, 6, 16, 14, 37, 22),
+                          datetime(2017, 6, 16, 19, 37, 22))
+
+        self.assert_range('next 2.5 years',
+                          datetime(2017, 6, 16, 19, 37, 22),
+                          datetime(2017, 8, 16, 19, 37, 22))
+
+        self.assert_range('next 2.5 months',
+                          datetime(2017, 6, 16, 19, 37, 22),
+                          datetime(2017, 8, 16, 19, 37, 22))
+
+        self.assert_range('next 2.5 days',
+                          now,
+                          datetime(2017, 6, 18, 37, 22))
+
+        self.assert_range('next 4.5 hours',
+                          datetime(2017, 6, 16, 19, 37, 22),
+                          datetime(2017, 6, 16, 23, 37, 22))
+
+        self.assert_range('2.5 years ago',
+                          datetime(2015, 6, 16),
+                          datetime(2015, 6, 17))
+
+        self.assert_range('2.5 months ago',
+                          datetime(2017, 4, 16),
+                          datetime(2017, 4, 17))
+
+        self.assert_range('2.5 weeks ago',
+                          datetime(2017, 6, 2),
+                          datetime(2017, 6, 3))
+
+        self.assert_range('2.5 days ago',
+                          datetime(2017, 6, 14),
+                          datetime(2017, 6, 15))
+
+        self.assert_range('2.5 hours ago',
+                          datetime(2017, 6, 16, 17),
+                          datetime(2017, 6, 16, 18))
+
+        self.assert_range('2.5 minutes ago',
+                          datetime(2017, 6, 16, 19, 35),
+                          datetime(2017, 6, 16, 19, 36))
+
+        self.assert_range('2.5 seconds ago',
+                          datetime(2017, 6, 16, 19, 37, 20),
+                          datetime(2017, 6, 16, 19, 37, 21))
+
+        self.assert_range('in 2.5 years',
+                          datetime(2019, 6, 16),
+                          datetime(2019, 6, 17))
+
+        self.assert_range('in 2.5 months',
+                          datetime(2017, 8, 16),
+                          datetime(2017, 8, 17))
+
+        self.assert_range('in 2.5 weeks',
+                          datetime(2017, 6, 30),
+                          datetime(2017, 7, 1))
+
+        self.assert_range('in 2.5 days',
+                          datetime(2017, 6, 18),
+                          datetime(2017, 6, 19))
+
+        self.assert_range('in 2.5 hours',
+                          datetime(2017, 6, 16, 21),
+                          datetime(2017, 6, 16, 22))
+
+        self.assert_range('in 2.5 minutes',
+                          datetime(2017, 6, 16, 19, 39),
+                          datetime(2017, 6, 16, 19, 40))
+
+        self.assert_range('in 2.5 seconds',
+                          datetime(2017, 6, 16, 19, 37, 24),
+                          datetime(2017, 6, 16, 19, 37, 25))
+
+        self.assert_range('since 2.5 years ago', datetime(2015, 6, 16), now)
+        self.assert_range('since 2.5 months ago', datetime(2017, 4, 16), now)
+        self.assert_range('since 2.5 weeks ago', datetime(2017, 6, 2), now)
+        self.assert_range('since 2.5 days ago', datetime(2017, 6, 14), now)
+        self.assert_range('since 2.5 hours ago', datetime(2017, 6, 16, 17), now)
+        self.assert_range('since 2.5 minutes ago', datetime(2017, 6, 16, 19, 35), now)
+        self.assert_range('since 2.5 seconds ago', datetime(2017, 6, 16, 19, 37, 20), now)
+
 
 def main():
     os.environ['TZ'] = 'UTC'
