@@ -20,7 +20,6 @@ class T(unittest.TestCase):
                      start_tolerance: timedelta = timedelta(),
                      end_tolerance: timedelta = timedelta(),
                      **kw):
-
         start, end = Range(range_str, **kw)
 
         min_start = expected_start - start_tolerance
@@ -1198,6 +1197,7 @@ class T(unittest.TestCase):
     def test_weekend(self):
         now = datetime.now()
 
+        # Frozen date is on a weekend
         self.assert_range('this weekend',
                           datetime(2017, 6, 16, WEEKEND_START_HOUR),
                           datetime(2017, 6, 19, WEEKEND_END_HOUR))
@@ -1231,6 +1231,50 @@ class T(unittest.TestCase):
         self.assert_range('until next weekend',
                           now,
                           datetime(2017, 6, 23, WEEKEND_START_HOUR))
+
+        # On a non-weekend
+        with freeze_time('2017-06-14 10:43:09'):
+            self.assert_range('this weekend',
+                              datetime(2017, 6, 16, WEEKEND_START_HOUR),
+                              datetime(2017, 6, 19, WEEKEND_END_HOUR))
+
+            self.assert_range('this weekend',
+                              datetime(2017, 6, 16, WEEKEND_START_HOUR),
+                              datetime(2017, 6, 19, WEEKEND_END_HOUR),
+                              context=Context.PAST)
+
+            self.assert_range('this weekend',
+                              datetime(2017, 6, 16, WEEKEND_START_HOUR),
+                              datetime(2017, 6, 19, WEEKEND_END_HOUR),
+                              context=Context.FUTURE)
+
+            self.assert_range('last weekend',
+                              datetime(2017, 6, 9, WEEKEND_START_HOUR),
+                              datetime(2017, 6, 12, WEEKEND_END_HOUR))
+
+            self.assert_range('next weekend',
+                              datetime(2017, 6, 16, WEEKEND_START_HOUR),
+                              datetime(2017, 6, 19, WEEKEND_END_HOUR))
+
+            self.assert_range('since last weekend',
+                              datetime(2017, 6, 9, WEEKEND_START_HOUR),
+                              datetime.now())
+
+            self.assert_range('until next weekend',
+                              datetime.now(),
+                              datetime(2017, 6, 16, WEEKEND_START_HOUR))
+
+        # Not affected by week start day and time
+        self.assert_range('this weekend',
+                          datetime(2017, 6, 16, WEEKEND_START_HOUR),
+                          datetime(2017, 6, 19, WEEKEND_END_HOUR),
+                          week_start=0)
+
+        with freeze_time('2017-06-14 10:43:09'):
+            self.assert_range('this weekend',
+                              datetime(2017, 6, 16, WEEKEND_START_HOUR),
+                              datetime(2017, 6, 19, WEEKEND_END_HOUR),
+                              week_start=0)
 
 
 def main():
