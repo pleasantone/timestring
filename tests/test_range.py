@@ -6,8 +6,10 @@ from datetime import datetime, timedelta
 from ddt import ddt
 from freezegun import freeze_time
 
-from timestring import Context
-from timestring.Range import Range, Date, TimestringInvalid
+from timestring import Context, TimestringInvalid
+from timestring.Date import Date
+from timestring.Range import Range
+from timestring import Context, WEEKEND_START_HOUR, WEEKEND_END_HOUR
 
 
 @freeze_time('2017-06-16 19:37:22')
@@ -1192,6 +1194,43 @@ class T(unittest.TestCase):
         self.assert_range('since 2.5 seconds ago',
                           datetime(2017, 6, 16, 19, 37, 19, 500000),
                           now)
+
+    def test_weekend(self):
+        now = datetime.now()
+
+        self.assert_range('this weekend',
+                          datetime(2017, 6, 16, WEEKEND_START_HOUR),
+                          datetime(2017, 6, 19, WEEKEND_END_HOUR))
+
+        self.assert_range('this weekend',
+                          datetime(2017, 6, 16, WEEKEND_START_HOUR),
+                          now,
+                          context=Context.PAST)
+
+        self.assert_range('this weekend',
+                          now,
+                          datetime(2017, 6, 19),
+                          context=Context.FUTURE)
+
+        self.assert_range('last weekend',
+                          datetime(2017, 6, 9, WEEKEND_START_HOUR),
+                          datetime(2017, 6, 12, WEEKEND_END_HOUR))
+
+        self.assert_range('next weekend',
+                          datetime(2017, 6, 23, WEEKEND_START_HOUR),
+                          datetime(2017, 6, 26, WEEKEND_END_HOUR))
+
+        self.assert_range('since this weekend',
+                          datetime(2017, 6, 16, WEEKEND_START_HOUR),
+                          now)
+
+        self.assert_range('since last weekend',
+                          datetime(2017, 6, 9, WEEKEND_START_HOUR),
+                          now)
+
+        self.assert_range('until next weekend',
+                          now,
+                          datetime(2017, 6, 23, WEEKEND_START_HOUR))
 
 
 def main():

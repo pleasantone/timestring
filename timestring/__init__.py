@@ -12,6 +12,11 @@ contexts = dict(
 )
 Context = namedtuple('Context', contexts.keys())(**contexts)
 
+WEEKEND_START_DAY = 5    # Friday
+WEEKEND_START_HOUR = 18  # 6pm
+WEEKEND_END_DAY = 1   # Monday
+WEEKEND_END_HOUR = 0  # Midnight (morning)
+
 
 class TimestringInvalid(Exception):
     def __init__(self, reason):
