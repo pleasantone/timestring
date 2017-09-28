@@ -119,7 +119,7 @@ class Date(object):
                     else:
                         raise TimestringInvalid('Missing relationship such as "ago" or "from now"')
 
-                    new_date = Date(new_date).adjust_by_parsed(num, unit, sign).date
+                    new_date = Date(new_date).plus_(num, unit, sign).date
 
                 weekday = date.get('weekday')
                 relative_day = date.get('relative_day')
@@ -333,7 +333,7 @@ class Date(object):
         else:
             return Date('infinity')
 
-    def adjust_by_parsed(self, num, unit: str, sign: int):
+    def plus_(self, num, unit: str, sign: int = 1):
         assert sign in [-1, 1]
         if 'couple' in (num or ''):
             mag = 2
@@ -362,7 +362,7 @@ class Date(object):
                     year=new_date.year + month // 12,
                     month=abs(month) % 12
                 )
-                new_date += timedelta(days=12 * fraction)
+                new_date += timedelta(days=30 * fraction)
             except ValueError:  # No such day in that month
                 new_date += timedelta(days=30 * n)
 
@@ -390,28 +390,30 @@ class Date(object):
             if _unit:
                 new_date += timedelta(**{_unit: n})
             else:
-                raise TimestringInvalid()
+                raise TimestringInvalid('Unknown time unit: ' + unit)
 
         return Date(new_date)
 
-    def adjust(self, by):
+    def plus(self, duration):
         """
-        Return a new Date adjusted by the duration specified in `by`
+        :return a new Date adjusted by the duration
+        :param duration: int or float number of seconds or string of number and
+         time unit. The number can begin with '-' to indicate subtraction
         """
         if self.date == 'infinity':
             return
-        if isinstance(by, (str, unicode)):
-            by = by.lower().strip()
-            res = TIMESTRING_RE.search(by)
+        if isinstance(duration, (str, unicode)):
+            duration = duration.lower().strip()
+            res = TIMESTRING_RE.search(duration)
             if res:
                 res = res.groupdict()
-            sign = -1 if by.startswith('-') else 1
+            sign = -1 if duration.startswith('-') else 1
             num = res.get('num')
             unit = res.get('delta') or res.get('delta_2')
-            return self.adjust_by_parsed(num, unit, sign)
-        elif isinstance(by, (float, int)):
+            return self.plus_(num, unit, sign)
+        elif isinstance(duration, (float, int)):
             new = copy(self)
-            new.date = new.date + timedelta(seconds=by)
+            new.date = new.date + timedelta(seconds=duration)
             return new
 
         raise TimestringInvalid('Invalid type for adjust() duration')
@@ -422,7 +424,7 @@ class Date(object):
     def __add__(self, to):
         if self.date == 'infinity':
             return copy(self)
-        return self.adjust(to)
+        return self.plus(to)
 
     def __sub__(self, to):
         if self.date == 'infinity':
@@ -431,7 +433,7 @@ class Date(object):
             to = to[1:] if to.startswith('-') else ('-' + to)
         elif type(to) in (int, float, long):
             to *= -1
-        return self.adjust(to)
+        return self.plus(to)
 
     def __format__(self, _):
         if self.date != 'infinity':

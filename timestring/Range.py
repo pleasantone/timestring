@@ -86,11 +86,11 @@ class Range(object):
                     if group['until'] or group['by']:
                         context = Context.NEXT
 
-                if (group.get('delta') or group.get('delta_2')) is not None:
-                    delta = (group.get('delta') or group.get('delta_2')).lower()
-
+                delta = group.get('delta') or group.get('delta_2')
+                if delta:
+                    delta = delta.lower().strip()
+                    num = group['num']
                     start = Date("now", offset=offset, tz=tz)
-                    di = "%s %s" % (str(int(group['num'] or 1)), delta)
 
                     # ago                               [     ](     )x
                     # from now                         x(     )[     ]
@@ -115,9 +115,8 @@ class Range(object):
                     elif group['next'] and (group['num'] or group['article']):
                         if verbose:
                             print('next and (num or article)')
-                        if int(group['num'] or 1) > 1:
-                            di = "%s %s" % (str(int(group['num'] or 1)), delta)
-                        end = start + di
+                        end = start.plus_(num, delta)
+
 
                     # "next week"                       (  x  )[      ]
                     elif group['next'] or (not group['this'] and context == Context.NEXT):
@@ -128,13 +127,14 @@ class Range(object):
                                      tz=tz,
                                      week_start=week_start)
                         start = this.end
-                        end = start + di
+                        end = start.plus_(num, delta)
 
                     # "last 2 weeks", "the last hour"   [     ][     ]x
                     elif group['prev'] and (group['num'] or group['article']):
                         if verbose:
                             print('prev and (num or article)')
-                        end = start - di
+
+                        end = start.plus_(num, delta, -1)
 
                     # "last week"                       [     ](  x  )
                     elif group['prev']:
@@ -144,13 +144,15 @@ class Range(object):
                                      offset=offset,
                                      tz=tz,
                                      week_start=week_start)
-                        start = this.start - di
-                        end = this.end - di
+
+                        start = this.start.plus_(num, delta, -1)
+                        end = this.end.plus_(num, delta, -1)
 
                     # "1 year", "10 days" till now
-                    elif group['num']:
+                    elif num:
                         if verbose:
                             print('num')
+
                         end = start - group['duration']
 
                     # this                             [   x  ]
@@ -186,7 +188,7 @@ class Range(object):
 
                         if offset:
                             start = start.replace(**offset)
-                        end = start + di
+                        end = start.plus_(num, delta)
 
                 elif group['relative_day'] or group['weekday']:
                     if verbose:
@@ -454,8 +456,8 @@ class Range(object):
 
     def adjust(self, to):
         # return a new instane, like datetime does
-        return Range(self.start.adjust(to),
-                     self.end.adjust(to), tz=self.start.tz)
+        return Range(self.start.plus(to),
+                     self.end.plus(to), tz=self.start.tz)
 
     def next(self, times=1):
         """Returns a new instance of self
