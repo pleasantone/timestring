@@ -25,10 +25,10 @@ TIMESTRING_RE = re.compile(re.sub('[\t\n\s]', '', re.sub('(\(\?\#[^\)]+\))', '',
                         (?# =-=-=-= Matches:: number-frame-ago?, "4 weeks", "sixty days ago" =-=-=-= )
                         (?P<duration>
                             (\b(?P<in>in\s+))?
-                            (?P<num>((\d+|couple(\s+of)?|one|two|twenty|twelve|three|thirty|thirteen|four(teen|ty)?|five|fif(teen|ty)|six(teen|ty)?|seven(teen|ty)?|eight(een|y)?|nine(teen|ty)?|ten|eleven|hundred)\s*)*)
+                            (?P<num>((\d+(\.\d+)?|couple(\s+of)?|one|two|twenty|twelve|three|thirty|thirteen|four(teen|ty)?|five|fif(teen|ty)|six(teen|ty)?|seven(teen|ty)?|eight(een|y)?|nine(teen|ty)?|ten|eleven|hundred)\s*)*)
                             (
-                                \b(?P<delta>seconds?|minutes?|hours?|days?|weeks?|months?|quarters?|years?)|
-                                ((?<![a-zA-Z])(?P<delta_2>[YyQqDdHhMmSs])(?!\w))
+                                \b(?P<delta>seconds?|minutes?|hours?|days?|weeks?|months?|quarters?|years?)
+                                |((?<![a-zA-Z])(?P<delta_2>[YyQqDdHhMmSs])(?!\w))
                             )
                         )
                         (\s+((?P<ago>ago)|(?P<from_now>from\s+now))\b)?

@@ -23,7 +23,6 @@ class T(unittest.TestCase):
                          + '\n          Text: ' + range_str
                          + '\nExpected start: ' + str(expected_start)
                          + '\n  Actual start: ' + str(start))
-
         self.assertEqual(end,
                          expected_end,
                          '\n         Now: ' + str(datetime.now())
@@ -1053,37 +1052,14 @@ class T(unittest.TestCase):
     def test_fractional_duration(self):
         now = datetime.now()
 
-        self.assert_range('last 5.5 years',
-                          datetime(2017, 1, 16, 19, 37, 22),
-                          datetime(2017, 6, 16, 19, 37, 22))
-
-        self.assert_range('last 5.5 months',
-                          datetime(2017, 1, 16, 19, 37, 22),
-                          datetime(2017, 6, 16, 19, 37, 22))
-
-        self.assert_range('last 2.5 days',
-                          datetime(2017, 6, 14, 19, 37, 22),
-                          now)
-
-        self.assert_range('last 5.5 hours',
-                          datetime(2017, 6, 16, 14, 37, 22),
-                          datetime(2017, 6, 16, 19, 37, 22))
-
-        self.assert_range('next 2.5 years',
-                          datetime(2017, 6, 16, 19, 37, 22),
-                          datetime(2017, 8, 16, 19, 37, 22))
-
-        self.assert_range('next 2.5 months',
-                          datetime(2017, 6, 16, 19, 37, 22),
-                          datetime(2017, 8, 16, 19, 37, 22))
-
-        self.assert_range('next 2.5 days',
-                          now,
-                          datetime(2017, 6, 18, 37, 22))
-
-        self.assert_range('next 4.5 hours',
-                          datetime(2017, 6, 16, 19, 37, 22),
-                          datetime(2017, 6, 16, 23, 37, 22))
+        self.assert_range('last 2.5 years', datetime(2015, 6, 16, 19, 37, 22), now)
+        self.assert_range('last 2.5 months', datetime(2017, 6, 16, 19, 37, 22), now)
+        self.assert_range('last 2.5 days', datetime(2017, 6, 16, 19, 37, 22), now)
+        self.assert_range('last 2.5 hours', datetime(2017, 6, 16, 14, 37, 22), now)
+        self.assert_range('next 2.5 years', now, datetime(2017, 6, 16, 19, 37, 22))
+        self.assert_range('next 2.5 months', now, datetime(2017, 6, 16, 19, 37, 22))
+        self.assert_range('next 2.5 days', now, datetime(2017, 6, 16, 19, 37, 22))
+        self.assert_range('next 2.5 hours', now, datetime(2017, 6, 16, 19, 37, 22))
 
         self.assert_range('2.5 years ago',
                           datetime(2015, 6, 16),
