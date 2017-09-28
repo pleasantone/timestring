@@ -153,7 +153,7 @@ class Range(object):
                         if verbose:
                             print('num')
 
-                        end = start - group['duration']
+                        end = start.plus_(num, delta, -1)
 
                     # this                             [   x  ]
                     elif group['this'] or not group['recurrence']:
