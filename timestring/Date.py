@@ -44,6 +44,14 @@ DAYTIMES = dict(
     nighttime=21,
     midnight=24
 )
+TIMEDELTA_UNITS = dict(
+    w='weeks',
+    d='days',
+    h='hours',
+    m='minutes',
+    s='seconds',
+    u='microseconds',
+)
 
 
 class Date(object):
@@ -378,16 +386,11 @@ class Date(object):
             new_date += timedelta(days=91 * n)
 
         else:
-            units = dict(
-                w='weeks',
-                d='days',
-                h='hours',
-                m='minutes',
-                s='seconds',
-                u='microseconds',
-            )
-            _unit = units.get(unit[0])
-            new_date += timedelta(**{_unit: n})
+            _unit = TIMEDELTA_UNITS.get(unit[0])
+            if _unit:
+                new_date += timedelta(**{_unit: n})
+            else:
+                raise TimestringInvalid()
 
         return Date(new_date)
 
