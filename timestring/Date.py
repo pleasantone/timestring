@@ -6,7 +6,7 @@ from copy import copy
 from datetime import datetime, timedelta
 
 from timestring.text2num import text2num
-from timestring import TimestringInvalid, CONTEXT_PREV, CONTEXT_NEXT
+from timestring import TimestringInvalid, Context
 from timestring.timestring_re import TIMESTRING_RE
 from timestring.utils import get_timezone_time
 
@@ -105,9 +105,9 @@ class Date(object):
                 # Number of (days|...) [ago]
                 elif num and delta:
                     delta = delta.lower()
-                    if date.get('ago') or context == CONTEXT_PREV or date.get('prev'):
+                    if date.get('ago') or context == Context.PREV or date.get('prev'):
                         sign = -1
-                    elif date.get('in') or date.get('from_now') or context == CONTEXT_NEXT or date.get('next'):
+                    elif date.get('in') or date.get('from_now') or context == Context.NEXT or date.get('next'):
                         sign = 1
                     else:
                         raise TimestringInvalid('Missing relationship such as "ago" or "from now"')
@@ -163,9 +163,9 @@ class Date(object):
                     new_date = new_date.replace(hour=0, minute=0, second=0, microsecond=0)
                     iso = WEEKDAY_ORDINALS.get(weekday)
                     if iso:
-                        if date.get('next') or context == CONTEXT_NEXT:
+                        if date.get('next') or context == Context.NEXT:
                             days = iso - new_date.isoweekday() + (7 if iso <= new_date.isoweekday() else 0)
-                        elif date.get('prev') or context == CONTEXT_PREV:
+                        elif date.get('prev') or context == Context.PREV:
                             days = iso - new_date.isoweekday() - (7 if iso >= new_date.isoweekday() else 0)
                         else:
                             days = iso - new_date.isoweekday() + (7 if iso < new_date.isoweekday() else 0)
@@ -200,10 +200,10 @@ class Date(object):
                     new_date = new_date.replace(month=int(month_ord))
 
                     if year == []:
-                        if date.get('next') or context == CONTEXT_NEXT:
+                        if date.get('next') or context == Context.NEXT:
                             if month_ord <= now.month:
                                 new_date = new_date.replace(year=new_date.year + 1)
-                        elif date.get('prev') or context == CONTEXT_PREV:
+                        elif date.get('prev') or context == Context.PREV:
                             if month_ord >= now.month:
                                 new_date = new_date.replace(year=new_date.year - 1)
                         elif month_ord < now.month and not year:

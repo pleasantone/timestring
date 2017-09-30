@@ -1,13 +1,16 @@
 import re
 import sys
 import argparse
+from collections import namedtuple
 from datetime import datetime
 
-
-CONTEXT_PAST = -1  # "Emails from today"
-CONTEXT_FUTURE= 1  # "Reservation for today"
-CONTEXT_PREV = -2  # "Monday" if today is Monday means the previous Monday
-CONTEXT_NEXT = 2   # "Monday" if today is Monday means next Monday
+contexts = dict(
+    PAST=-1,   # "Emails from today"
+    FUTURE=1,  # "Reservation for today"
+    PREV=-2,   # "Monday" if today is Monday means the previous Monday
+    NEXT=2,    # "Monday" if today is Monday means next Monday
+)
+Context = namedtuple('Context', contexts.keys())(**contexts)
 
 
 class TimestringInvalid(Exception):
