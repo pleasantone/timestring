@@ -6,7 +6,7 @@ import unittest
 from freezegun import freeze_time
 
 from timestring.Range import Range
-from timestring import CONTEXT_PAST, CONTEXT_FUTURE
+from timestring import Context
 
 
 @freeze_time('2017-06-16 19:37:22')
@@ -15,16 +15,17 @@ class RangeTest(unittest.TestCase):
                      expected_end: datetime, context=None):
         _range = Range(range_str, context=context)
 
+        message = '\n           Now: ' + str(datetime.now()) \
+                  + '\n          Text: ' + range_str \
+                  + '\n       Context: ' + str(context)
         self.assertEqual(_range.start,
                          expected_start,
-                         '\n           Now: ' + str(datetime.now())
-                         + '\n          Text: ' + range_str
+                         message
                          + '\nExpected start: ' + str(expected_start)
                          + '\n  Actual start: ' + str(_range.start))
         self.assertEqual(_range.end,
                          expected_end,
-                         '\n           Now: ' + str(datetime.now())
-                         + '\n        Text: ' + range_str
+                         message
                          + '\nExpected end: ' + str(expected_end)
                          + '\n  Actual end: ' + str(_range.end))
 
@@ -106,100 +107,142 @@ class RangeTest(unittest.TestCase):
                           datetime(2017,  6,  16, 11,  0,  0),
                           datetime(2017,  6,  16, 12,  0,  0))
 
-
     def test_context(self):
+        now = datetime.now()
+
         # Current period
         self.assert_range('2017',
                           datetime(2017, 1, 1),
-                          datetime.now(),
-                          context=CONTEXT_PAST)
+                          now,
+                          context=Context.PAST)
 
         self.assert_range('2017',
-                          datetime.now(),
+                          now,
                           datetime(2018, 1, 1),
-                          context=CONTEXT_FUTURE)
+                          context=Context.FUTURE)
+
+        self.assert_range('2017',               # No effect
+                          datetime(2017, 1, 1),
+                          datetime(2018, 1, 1),
+                          context=Context.PREV)
+
+        self.assert_range('2017',               # No effect
+                          datetime(2017, 1, 1),
+                          datetime(2018, 1, 1),
+                          context=Context.NEXT)
 
         self.assert_range('june',
                           datetime(2017, 6, 1),
-                          datetime.now(),
-                          context=CONTEXT_PAST)
+                          now,
+                          context=Context.PAST)
 
         self.assert_range('june',
-                          datetime.now(),
+                          now,
                           datetime(2017, 7, 1),
-                          context=CONTEXT_FUTURE)
+                          context=Context.FUTURE)
+
+        self.assert_range('june',
+                          datetime(2016, 6, 1),
+                          datetime(2016, 7, 1),
+                          context=Context.PREV)
+
+        self.assert_range('june',
+                          datetime(2018, 6, 1),
+                          datetime(2018, 7, 1),
+                          context=Context.NEXT)
 
         self.assert_range('2017 june',
                           datetime(2017, 6, 1),
-                          datetime.now(),
-                          context=CONTEXT_PAST)
+                          now,
+                          context=Context.PAST)
 
         self.assert_range('2017 june',
-                          datetime.now(),
+                          now,
                           datetime(2017, 7, 1),
-                          context=CONTEXT_FUTURE)
+                          context=Context.FUTURE)
 
-        # A past period - no effect
-        self.assert_range('2000',
-                          datetime(2000, 1, 1),
-                          datetime(2001, 1, 1),
-                          context=CONTEXT_PAST)
-
-        self.assert_range('2000',
-                          datetime(2000, 1, 1),
-                          datetime(2001, 1, 1),
-                          context=CONTEXT_FUTURE)
-
-        self.assert_range('last may',
-                          datetime(2017, 5, 1),
+        self.assert_range('2017 june',          # No effect
                           datetime(2017, 6, 1),
-                          context=CONTEXT_PAST)
+                          datetime(2017, 7, 1),
+                          context=Context.PREV)
 
-        self.assert_range('last may',
-                          datetime(2017, 5, 1),
+        self.assert_range('2017 june',          # No effect
                           datetime(2017, 6, 1),
-                          context=CONTEXT_FUTURE)
+                          datetime(2017, 7, 1),
+                          context=Context.NEXT)
 
-        self.assert_range('2017 may',
-                          datetime(2017, 5, 1),
-                          datetime(2017, 6, 1),
-                          context=CONTEXT_PAST)
+        for context in Context.PAST, Context.FUTURE:
+            # A past period - no effect
+            self.assert_range('2000',
+                              datetime(2000, 1, 1),
+                              datetime(2001, 1, 1),
+                              context=context)
 
-        self.assert_range('2017 may',
-                          datetime(2017, 5, 1),
-                          datetime(2017, 6, 1),
-                          context=CONTEXT_FUTURE)
+            self.assert_range('last may',
+                              datetime(2017, 5, 1),
+                              datetime(2017, 6, 1),
+                              context=context)
 
-        # A future period - no effect
+            self.assert_range('2017 may',
+                              datetime(2017, 5, 1),
+                              datetime(2017, 6, 1),
+                              context=context)
+
+            # A future period - no effect
+            self.assert_range('2018',
+                              datetime(2018, 1, 1),
+                              datetime(2019, 1, 1),
+                              context=context)
+
+            self.assert_range('july',
+                              datetime(2017, 7, 1),
+                              datetime(2017, 8, 1),
+                              context=context)
+
+            self.assert_range('2017 july',
+                              datetime(2017, 7, 1),
+                              datetime(2017, 8, 1),
+                              context=context)
+
         self.assert_range('2018',
                           datetime(2018, 1, 1),
                           datetime(2019, 1, 1),
-                          context=CONTEXT_PAST)
+                          context=Context.PREV)
 
         self.assert_range('2018',
                           datetime(2018, 1, 1),
                           datetime(2019, 1, 1),
-                          context=CONTEXT_FUTURE)
+                          context=Context.NEXT)
+
+        self.assert_range('april',
+                          datetime(2017, 4, 1),
+                          datetime(2017, 5, 1),
+                          context=Context.PREV)
+
+        self.assert_range('april',
+                          datetime(2018, 4, 1),
+                          datetime(2018, 5, 1),
+                          context=Context.NEXT)
+
+        self.assert_range('july',
+                          datetime(2016, 7, 1),
+                          datetime(2016, 8, 1),
+                          context=Context.PREV)
 
         self.assert_range('july',
                           datetime(2017, 7, 1),
                           datetime(2017, 8, 1),
-                          context=CONTEXT_PAST)
-
-        self.assert_range('july',
-                          datetime(2017, 7, 1),
-                          datetime(2017, 8, 1),
-                          context=CONTEXT_FUTURE)
+                          context=Context.NEXT)
 
         self.assert_range('2017 july',
                           datetime(2017, 7, 1),
                           datetime(2017, 8, 1),
-                          context=CONTEXT_PAST)
+                          context=Context.PREV)
 
         self.assert_range('2017 july',
                           datetime(2017, 7, 1),
                           datetime(2017, 8, 1),
-                          context=CONTEXT_FUTURE)
+                          context=Context.NEXT)
 
     def test_implicit_date_change(self):
         # Date change between start and end
@@ -287,12 +330,12 @@ class RangeTest(unittest.TestCase):
         self.assert_range('this year',
                           datetime(2017, 1, 1, 0, 0, 0),
                           datetime.now(),
-                          context=CONTEXT_PAST)
+                          context=Context.PAST)
 
         self.assert_range('this year',
                           datetime.now(),
                           datetime(2018, 1, 1, 0, 0, 0),
-                          context=CONTEXT_FUTURE)
+                          context=Context.FUTURE)
 
         self.assert_range('last year',
                           datetime(2016, 1, 1, 0, 0, 0),
@@ -314,12 +357,12 @@ class RangeTest(unittest.TestCase):
         self.assert_range('this month',
                           datetime(2017, 6, 1, 0, 0, 0),
                           datetime.now(),
-                          context=CONTEXT_PAST)
+                          context=Context.PAST)
 
         self.assert_range('this month',
                           datetime.now(),
                           datetime(2017, 7, 1, 0, 0, 0),
-                          context=CONTEXT_FUTURE)
+                          context=Context.FUTURE)
 
         self.assert_range('next month',
                           datetime(2017, 7, 1, 0, 0, 0),
@@ -357,12 +400,12 @@ class RangeTest(unittest.TestCase):
         self.assert_range('this week',
                           datetime(2017, 6, 12),
                           datetime.now(),
-                          context=CONTEXT_PAST)
+                          context=Context.PAST)
 
         self.assert_range('this week',
                           datetime.now(),
                           datetime(2017, 6, 19),
-                          context=CONTEXT_FUTURE)
+                          context=Context.FUTURE)
 
         self.assert_range('last week',
                           datetime(2017, 6, 5),
@@ -380,12 +423,12 @@ class RangeTest(unittest.TestCase):
         self.assert_range('today',
                           datetime(2017, 6, 16),
                           datetime.now(),
-                          context=CONTEXT_PAST)
+                          context=Context.PAST)
 
         self.assert_range('today',
                           datetime.now(),
                           datetime(2017, 6, 17),
-                          context=CONTEXT_FUTURE)
+                          context=Context.FUTURE)
 
         self.assert_range('tomorrow',
                           datetime(2017, 6, 17),
@@ -431,12 +474,12 @@ class RangeTest(unittest.TestCase):
         self.assert_range(weekday,
                           datetime(2017, 6, 16),
                           datetime.now(),
-                          context=CONTEXT_PAST)
+                          context=Context.PAST)
 
         self.assert_range(weekday,
                           datetime.now(),
                           datetime(2017, 6, 17),
-                          context=CONTEXT_FUTURE)
+                          context=Context.FUTURE)
 
         self.assert_range('next ' + weekday,
                           datetime(2017, 6, 23),
@@ -724,9 +767,9 @@ class RangeTest(unittest.TestCase):
         self.assert_range('until 20 hours from now', now, datetime(2017, 6, 17, 15))
         self.assert_range('until 45 minutes from now', now, datetime(2017, 6, 16, 20, 22))
         self.assert_range('until 45 seconds from now', now, datetime(2017, 6, 16, 19, 38, 7))
-        #
-        # # TODO "Until yesterday" etc: error or guess or infinity or unknown
-        # # TODO "Until the start of today" vs "Until the end of today"
+
+        # TODO "Until yesterday" etc: error or guess or infinity or unknown
+        # TODO "Until the start of today" vs "Until the end of today"
 
 
 def main():
