@@ -249,9 +249,7 @@ class Range(object):
 
                 if group['since']:
                     end = now
-                elif group['by'] and group['time_2'] is None:
-                    start = now
-                elif group['until'] or (group['by'] and group['time_2'] is not None):
+                elif group['until'] or group['by']:
                     end = start
                     start = now
 

@@ -770,44 +770,38 @@ class RangeTest(unittest.TestCase):
 
     def test_by(self):
         now = datetime.now()
-        self.assert_range('by next may', now, datetime(2018, 6, 1))
-        self.assert_range('by next Friday', now, datetime(2017, 6, 24))
-        self.assert_range('by next Saturday', now, datetime(2017, 6, 18))
-        self.assert_range('by next Thursday', now, datetime(2017, 6, 23))
-        self.assert_range('by next year', now, datetime(2019, 1, 1))
-        self.assert_range('by next month', now, datetime(2017, 8, 1))
-        self.assert_range('by next week', now, datetime(2017, 6, 26))
-        self.assert_range('by tomorrow', now, datetime(2017, 6, 18))
 
-        self.assert_range('by 2018', now, datetime(2019, 1, 1))
-        self.assert_range('by April', now, datetime(2018, 5, 1))
-        self.assert_range('by April 2018', now, datetime(2018, 5, 1))
-        self.assert_range('by April 11, 2018', now, datetime(2018, 4, 12))
-        self.assert_range('by Friday', now, datetime(2017, 6, 24))
-        self.assert_range('by Saturday', now, datetime(2017, 6, 18))
-        self.assert_range('by Thursday', now, datetime(2017, 6, 23))
+        self.assert_range('by next may', now, datetime(2018, 5, 1))
+        self.assert_range('by next Friday', now, datetime(2017, 6, 23))
+        self.assert_range('by next Saturday', now, datetime(2017, 6, 17))
+        self.assert_range('by next Thursday', now, datetime(2017, 6, 22))
+        self.assert_range('by next year', now, datetime(2018, 1, 1))
+        self.assert_range('by next month', now, datetime(2017, 7, 1))
+        self.assert_range('by next week', now, datetime(2017, 6, 19))
+        self.assert_range('by tomorrow', now, datetime(2017, 6, 17))
 
-        self.assert_range('by this month', now, datetime(2017, 7, 1))
-        self.assert_range('by this week', now, datetime(2017, 6, 19))
-        self.assert_range('by today', now, datetime(2017, 6, 17))
-        self.assert_range('by tomorrow morning', now, datetime(2017, 6, 17, 9))
-        self.assert_range('by 11pm', now, datetime(2017, 6, 16, 23))
+        self.assert_range('by 2018', now, datetime(2018, 1, 1))
+        self.assert_range('by April', now, datetime(2018, 4, 1))
+        self.assert_range('by April 2018', now, datetime(2018, 4, 1))
+        self.assert_range('by April 11, 2018', now, datetime(2018, 4, 11))
+        self.assert_range('by Friday', now, datetime(2017, 6, 23))
+        self.assert_range('by Saturday', now, datetime(2017, 6, 17))
+        self.assert_range('by Thursday', now, datetime(2017, 6, 22))
 
-        # TODO: error?
-        # self.assert_range('by 2 years from now', now, datetime(2019, 6, 16))
-        # self.assert_range('by 2 months from now', now, datetime(2017, 8, 16))
-        # self.assert_range('by 2 weeks from now', now, datetime(2017, 6, 30))
-        # self.assert_range('by 2 days from now', now, datetime(2017, 6, 18))
-        # self.assert_range('by 2 hours from now', now, datetime(2017, 6, 16, 21))
-        # self.assert_range('by 2 minutes from now', now, datetime(2017, 6, 16, 19, 39))
-        # self.assert_range('by 2 seconds from now', now, datetime(2017, 6, 16, 19, 37, 24))
-        #
-        # # Implicit change of year, month, date etc
-        # self.assert_range('by 10 months from now', now, datetime(2018, 4, 16))
-        # self.assert_range('by 20 days from now', now, datetime(2017, 7, 6))
-        # self.assert_range('by 20 hours from now', now, datetime(2017, 6, 17, 15))
-        # self.assert_range('by 45 minutes from now', now,datetime(2017, 6, 16, 20, 22))
-        # self.assert_range('by 45 seconds from now', now, datetime(2017, 6, 16, 19, 38, 7))
+        self.assert_range('by 2 years from now', now, datetime(2019, 6, 16))
+        self.assert_range('by 2 months from now', now, datetime(2017, 8, 16))
+        self.assert_range('by 2 weeks from now', now, datetime(2017, 6, 30))
+        self.assert_range('by 2 days from now', now, datetime(2017, 6, 18))
+        self.assert_range('by 2 hours from now', now, datetime(2017, 6, 16, 21))
+        self.assert_range('by 2 minutes from now', now, datetime(2017, 6, 16, 19, 39))
+        self.assert_range('by 2 seconds from now', now, datetime(2017, 6, 16, 19, 37, 24))
+
+        # Implicit change of year, month, date etc
+        self.assert_range('by 10 months from now', now, datetime(2018, 4, 16))
+        self.assert_range('by 20 days from now', now, datetime(2017, 7, 6))
+        self.assert_range('by 20 hours from now', now, datetime(2017, 6, 17, 15))
+        self.assert_range('by 45 minutes from now', now, datetime(2017, 6, 16, 20, 22))
+        self.assert_range('by 45 seconds from now', now, datetime(2017, 6, 16, 19, 38, 7))
 
         # TODO "by yesterday" etc: error or guess or infinity or unknown
         # TODO "by the start of today" vs "by the end of today"
