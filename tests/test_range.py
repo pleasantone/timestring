@@ -1209,7 +1209,7 @@ class T(unittest.TestCase):
 
         self.assert_range('this weekend',
                           now,
-                          datetime(2017, 6, 19),
+                          datetime(2017, 6, 19, WEEKEND_END_HOUR),
                           context=Context.FUTURE)
 
         self.assert_range('last weekend',
