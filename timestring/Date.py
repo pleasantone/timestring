@@ -48,7 +48,7 @@ DAYTIMES = dict(
 
 
 class Date(object):
-    def __init__(self, date=None, offset=None, start_of_week=None, tz=None,
+    def __init__(self, date=None, offset=None, tz=None,
                  verbose=False, context=None):
         self._original = date
         if tz:
