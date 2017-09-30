@@ -6,12 +6,18 @@ TIMESTRING_RE = re.compile(re.sub('[\t\n\s]', '', re.sub('(\(\?\#[^\)]+\))', '',
             (?P<unixtime>\d{10})
             |
             (
-                (\b(?P<since>since)\s+)?
+                (\b((?P<since>since)|(?P<until>until|till)|(?P<by>by))\s+)?
                 (
                     (\b(?P<article>the\s)\s+)?
                     \b(?P<relative_day>day\s+before\s+yesterday|day\s+after\s+tomorrow|today|now|yesterday|tomorrow)\b
                     |
-                    ((?P<ref>next|upcoming|last|prev(ious)|past|this|current)\s+)?
+                    (\b
+                        (?P<recurrence>
+                            (?P<this>this|current)
+                            |(?P<prev>last|prev(ious)|past|prior)
+                            |(?P<next>next|upcoming|following)
+                        )
+                    \s+)?
                     (
                         (?# =-=-=-= Matches Days =-=-=-= )
                         (?P<weekday>\b(mondays?|tuesdays?|wednesdays?|thursdays?|fridays?|saturdays?|sundays?|mon|tues?|wedn?|thur?|fri|sat|sun)\b)
@@ -24,8 +30,8 @@ TIMESTRING_RE = re.compile(re.sub('[\t\n\s]', '', re.sub('(\(\?\#[^\)]+\))', '',
                                 \b(?P<delta>seconds?|minutes?|hours?|days?|weeks?|months?|quarters?|years?)|
                                 ((?<![a-zA-Z])(?P<delta_2>[YyQqDdHhMmSs])(?!\w))
                             )
-                            (\s+((?P<ago>ago)|(?P<from_now>from\s+now))\b)?
                         )
+                        (\s+((?P<ago>ago)|(?P<from_now>from\s+now))\b)?
                         |
                         (?# =-=-=-= Matches Y-M-D, M-D-Y, D-M-Y, Y-D-M ex. "january 5, 2012", "january 5th, '12", "jan 5th 2012", "5 December, 2016" =-=-=-= )
                         (?P<date_5>

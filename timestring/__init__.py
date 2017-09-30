@@ -4,13 +4,18 @@ import argparse
 from datetime import datetime
 
 
+CONTEXT_PAST = -1  # "Emails from today"
+CONTEXT_FUTURE= 1  # "Reservation for today"
+CONTEXT_PREV = -2  # "Monday" if today is Monday means the previous Monday
+CONTEXT_NEXT = 2   # "Monday" if today is Monday means next Monday
+
+
 class TimestringInvalid(Exception):
     def __init__(self, reason):
         self.reason = reason
 
     def __str__(self):
         return self.reason
-
 
 from .Date import Date
 from .Range import Range
