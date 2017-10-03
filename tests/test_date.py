@@ -33,28 +33,25 @@ class T(unittest.TestCase):
             '2012/9/5',
             '2012-09-5T',
             '9/5/2012',
+            '5th September, 2012',
             # TODO: 5th of September, 2012
         ]:
             self.assert_date(date_str, datetime(2012, 9, 5))
-
         # TODO: 13/5/2012
 
     def test_time_formats(self):
-        self.assert_date('november 5 @ 10pm', datetime(2017, 11, 5, 22, 0, 0))
-
         for time_str in ['11am', '11 AM', '11a', "11 o'clock", '11 oclock',]:
             self.assert_date(time_str, datetime(2017, 6, 16, 11, 0, 0))
             # TODO: at 11
             # TODO: eleven o'clock
             # TODO: 1100 hours
-            # TODO: by
-            # TODO: dec 31 11pm
-            # TODO: dec 31, 11pm
-            # TODO: dec 31 11pm
-            # TODO: 11pm, dec 31
-            # TODO: dec 31 @ 11pm
 
-    def test_date_and_time(self):
+    def test_date_and_time_formats(self):
+        for date_str in ['sep 5 @ 11am', 'sep 5 @ 11am', '11am, sep 5']:
+            # TODO sep 5 11pm
+            # TODO sep 5, 11pm
+            self.assert_date(date_str, datetime(2017, 9, 5, 11, 0, 0))
+
         now = datetime.now()
 
         date = Date('01/10/2015 at 7:30pm')
@@ -64,10 +61,10 @@ class T(unittest.TestCase):
         self.assertEqual(date.hour, 19)
         self.assertEqual(date.minute, 30)
 
-        date = Date('may 23rd, 1988 at 6:24 am')
+        date = Date('sep 5th, 1988 at 6:24 am')
         self.assertEqual(date.year, 1988)
-        self.assertEqual(date.month, 5)
-        self.assertEqual(date.day, 23)
+        self.assertEqual(date.month, 9)
+        self.assertEqual(date.day, 5)
         self.assertEqual(date.hour, 6)
         self.assertEqual(date.minute, 24)
 
@@ -132,7 +129,10 @@ class T(unittest.TestCase):
         self.assertEqual(Date('01/10/2015 at 7:30pm').month, 1)
         self.assertEqual(Date('today').day, now.day)
 
-    def test_singles(self):
+        # offset timezones
+        self.assertEqual(Date('2014-03-06 15:33:43.764419-05').hour, 20)
+
+    def test_timestamp(self):
         ts = 1374681560
         for param in ts, str(ts):
             date = Date(param)
@@ -140,9 +140,7 @@ class T(unittest.TestCase):
             self.assertEqual(date.month, 7)
             self.assertEqual(date.day, 24)
 
-        # offset timezones
-        self.assertEqual(Date('2014-03-06 15:33:43.764419-05').hour, 20)
-
+    def test_exceptions(self):
         for x in ['yestserday', 'Satruday', Exception]:
             with self.assertRaises(TimestringInvalid):
                 Date(x)
@@ -220,15 +218,8 @@ class T(unittest.TestCase):
         self.assertEqual(str(d.date), '2013-04-15 05:40:14.010001')
 
     def test_next_prev(self):
-        # Past month
-        self.assert_date('nov', datetime(2017, 11, 1))
-        self.assert_date('this nov', datetime(2017, 11, 1))
-        self.assert_date('last nov', datetime(2016, 11, 1))
-        self.assert_date('previous nov', datetime(2016, 11, 1))
-        self.assert_date('next nov', datetime(2017, 11, 1))
-        self.assert_date('upcoming nov', datetime(2017, 11, 1))
+        # Month
 
-        # Future month
         self.assert_date('feb', datetime(2018, 2, 1))
         self.assert_date('this feb', datetime(2018, 2, 1), )
         self.assert_date('last feb', datetime(2017, 2, 1))
@@ -236,13 +227,20 @@ class T(unittest.TestCase):
         self.assert_date('next feb', datetime(2018, 2, 1))
         self.assert_date('upcoming feb', datetime(2018, 2, 1))
 
-        # Current month
+        self.assert_date('nov', datetime(2017, 11, 1))
+        self.assert_date('this nov', datetime(2017, 11, 1))
+        self.assert_date('last nov', datetime(2016, 11, 1))
+        self.assert_date('previous nov', datetime(2016, 11, 1))
+        self.assert_date('next nov', datetime(2017, 11, 1))
+        self.assert_date('upcoming nov', datetime(2017, 11, 1))
+
         self.assert_date('june', datetime(2017, 6, 1))
         self.assert_date('this june', datetime(2017, 6, 1))
         self.assert_date('last june', datetime(2016, 6, 1))
         self.assert_date('next june', datetime(2018, 6, 1))
 
-        # Past weekday
+        # Weekday
+
         self.assert_date('sun', datetime(2017, 6, 18))
         self.assert_date('this sun', datetime(2017, 6, 18))
         self.assert_date('last sun', datetime(2017, 6, 11))
@@ -250,14 +248,12 @@ class T(unittest.TestCase):
         self.assert_date('next sun', datetime(2017, 6, 18))
         self.assert_date('upcoming sun', datetime(2017, 6, 18))
 
-        # Future weekday
         self.assert_date('wed', datetime(2017, 6, 21))
         self.assert_date('last wed', datetime(2017, 6, 14))
         self.assert_date('previous wed', datetime(2017, 6, 14))
         self.assert_date('next wed', datetime(2017, 6, 21))
         self.assert_date('upcoming wed', datetime(2017, 6, 21))
 
-        # Current weekday
         self.assert_date('fri', datetime(2017, 6, 16))
         self.assert_date('this fri', datetime(2017, 6, 16))
         self.assert_date('last fri', datetime(2017, 6, 9))
