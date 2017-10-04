@@ -83,7 +83,7 @@ class Range(object):
                 if not group['this']:
                     if group['since']:
                         context = Context.PREV
-                    if group['until']:
+                    if group['until'] or group['by']:
                         context = Context.NEXT
 
                 if (group.get('delta') or group.get('delta_2')) is not None:
@@ -249,7 +249,7 @@ class Range(object):
 
                 if group['since']:
                     end = now
-                elif group['until']:
+                elif group['until'] or group['by']:
                     end = start
                     start = now
 

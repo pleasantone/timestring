@@ -15,17 +15,14 @@ class RangeTest(unittest.TestCase):
                      expected_end: datetime, **kw):
         _range = Range(range_str, **kw)
 
-        message = '\n           Now: ' + str(datetime.now()) \
-                  + '\n          Text: ' + range_str \
-                  + '\n       Context: ' + str(context)
         self.assertEqual(_range.start,
                          expected_start,
-                         message
+                         '\n          Text: ' + range_str \
                          + '\nExpected start: ' + str(expected_start)
                          + '\n  Actual start: ' + str(_range.start))
         self.assertEqual(_range.end,
                          expected_end,
-                         message
+                         '\n          Text: ' + range_str \
                          + '\nExpected end: ' + str(expected_end)
                          + '\n  Actual end: ' + str(_range.end))
 
@@ -771,6 +768,44 @@ class RangeTest(unittest.TestCase):
         # TODO "Until yesterday" etc: error or guess or infinity or unknown
         # TODO "Until the start of today" vs "Until the end of today"
 
+    def test_by(self):
+        now = datetime.now()
+
+        self.assert_range('by next may', now, datetime(2018, 5, 1))
+        self.assert_range('by next Friday', now, datetime(2017, 6, 23))
+        self.assert_range('by next Saturday', now, datetime(2017, 6, 17))
+        self.assert_range('by next Thursday', now, datetime(2017, 6, 22))
+        self.assert_range('by next year', now, datetime(2018, 1, 1))
+        self.assert_range('by next month', now, datetime(2017, 7, 1))
+        self.assert_range('by next week', now, datetime(2017, 6, 19))
+        self.assert_range('by tomorrow', now, datetime(2017, 6, 17))
+
+        self.assert_range('by 2018', now, datetime(2018, 1, 1))
+        self.assert_range('by April', now, datetime(2018, 4, 1))
+        self.assert_range('by April 2018', now, datetime(2018, 4, 1))
+        self.assert_range('by April 11, 2018', now, datetime(2018, 4, 11))
+        self.assert_range('by Friday', now, datetime(2017, 6, 23))
+        self.assert_range('by Saturday', now, datetime(2017, 6, 17))
+        self.assert_range('by Thursday', now, datetime(2017, 6, 22))
+
+        self.assert_range('by 2 years from now', now, datetime(2019, 6, 16))
+        self.assert_range('by 2 months from now', now, datetime(2017, 8, 16))
+        self.assert_range('by 2 weeks from now', now, datetime(2017, 6, 30))
+        self.assert_range('by 2 days from now', now, datetime(2017, 6, 18))
+        self.assert_range('by 2 hours from now', now, datetime(2017, 6, 16, 21))
+        self.assert_range('by 2 minutes from now', now, datetime(2017, 6, 16, 19, 39))
+        self.assert_range('by 2 seconds from now', now, datetime(2017, 6, 16, 19, 37, 24))
+
+        # Implicit change of year, month, date etc
+        self.assert_range('by 10 months from now', now, datetime(2018, 4, 16))
+        self.assert_range('by 20 days from now', now, datetime(2017, 7, 6))
+        self.assert_range('by 20 hours from now', now, datetime(2017, 6, 17, 15))
+        self.assert_range('by 45 minutes from now', now, datetime(2017, 6, 16, 20, 22))
+        self.assert_range('by 45 seconds from now', now, datetime(2017, 6, 16, 19, 38, 7))
+
+        # TODO "by yesterday" etc: error or guess or infinity or unknown
+        # TODO "by the start of today" vs "by the end of today"
+
     def test_week_start(self):
         self.assert_range('this week',
                           datetime(2017, 6, 11),
@@ -785,13 +820,13 @@ class RangeTest(unittest.TestCase):
         self.assert_range('this week',
                           datetime(2017, 6, 11),
                           datetime.now(),
-                          context=CONTEXT_PAST,
+                          context=Context.PAST,
                           week_start=0)
 
         self.assert_range('this week',
                           datetime.now(),
                           datetime(2017, 6, 18),
-                          context=CONTEXT_FUTURE,
+                          context=Context.FUTURE,
                           week_start=0)
 
         self.assert_range('last week',
