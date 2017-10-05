@@ -1,7 +1,7 @@
 import os
 import time
 import unittest
-from datetime import datetime, timedelta
+from datetime import datetime
 
 from ddt import ddt
 from freezegun import freeze_time
@@ -286,12 +286,7 @@ class T(unittest.TestCase):
         self.assertTrue(infinity in r)
         self.assertFalse(infinity > r)
         self.assertFalse(r > infinity)
-        self.assertEqual(r.start.year, 2013)
-        self.assertEqual(r.start.month, 12)
-        self.assertEqual(r.start.day, 9)
-        self.assertEqual(r.start.hour, 11)
-        self.assertEqual(r.start.minute, 57)
-        self.assertEqual(r.start.second, 46)
+        self.assertEqual(r.start, datetime(2013, 12, 9, 11, 57, 46, 545020))
 
     def test_this(self):
         now = datetime.now()

@@ -34,9 +34,15 @@ class T(unittest.TestCase):
             '2012-09-5T',
             '9/5/2012',
             '5th September, 2012',
+            '09/05/2012',
             # TODO: 5th of September, 2012
         ]:
             self.assert_date(date_str, datetime(2012, 9, 5))
+
+        self.assert_date('2012', datetime(2012, 1, 1))
+        self.assert_date('January 2013', datetime(2013, 1, 1))
+        self.assert_date('feb 2011', datetime(2011, 2, 1))
+        self.assert_date('today', datetime(2017, 6, 16))
         # TODO: 13/5/2012
 
     def test_time_formats(self):
@@ -52,82 +58,15 @@ class T(unittest.TestCase):
             # TODO sep 5, 11pm
             self.assert_date(date_str, datetime(2017, 9, 5, 11, 0, 0))
 
-        now = datetime.now()
-
-        date = Date('01/10/2015 at 7:30pm')
-        self.assertEqual(date.year, 2015)
-        self.assertEqual(date.month, 1)
-        self.assertEqual(date.day, 10)
-        self.assertEqual(date.hour, 19)
-        self.assertEqual(date.minute, 30)
-
-        date = Date('sep 5th, 1988 at 6:24 am')
-        self.assertEqual(date.year, 1988)
-        self.assertEqual(date.month, 9)
-        self.assertEqual(date.day, 5)
-        self.assertEqual(date.hour, 6)
-        self.assertEqual(date.minute, 24)
-
-        date = Date('2012 feb 2 1:13PM')
-        self.assertEqual(date.year, 2012)
-        self.assertEqual(date.month, 2)
-        self.assertEqual(date.day, 2)
-        self.assertEqual(date.hour, 13)
-        self.assertEqual(date.minute, 13)
-
-        date = Date('6:41 am on sept 8 2012')
-        self.assertEqual(date.year, 2012)
-        self.assertEqual(date.month, 9)
-        self.assertEqual(date.day, 8)
-        self.assertEqual(date.hour, 6)
-        self.assertEqual(date.minute, 41)
-
-        date = Date('2013-09-10T10:45:50')
-        self.assertEqual(date.year, 2013)
-        self.assertEqual(date.month, 9)
-        self.assertEqual(date.day, 10)
-        self.assertEqual(date.hour, 10)
-        self.assertEqual(date.minute, 45)
-        self.assertEqual(date.second, 50)
-
-        date = Date('August 25th, 2014 12:30 PM')
-        self.assertEqual(date.year, 2014)
-        self.assertEqual(date.month, 8)
-        self.assertEqual(date.day, 25)
-        self.assertEqual(date.hour, 12)
-        self.assertEqual(date.minute, 30)
-        self.assertEqual(date.second, 0)
-
-        date = Date('may 23, 2018 1 pm')
-        self.assertEqual(date.year, 2018)
-        self.assertEqual(date.month, 5)
-        self.assertEqual(date.day, 23)
-        self.assertEqual(date.hour, 13)
-        self.assertEqual(date.minute, 0)
-        self.assertEqual(date.second, 0)
-
-        date = Date('1-2-13 2 am')
-        self.assertEqual(date.year, 2013)
-        self.assertEqual(date.month, 1)
-        self.assertEqual(date.day, 2)
-        self.assertEqual(date.hour, 2)
-        self.assertEqual(date.minute, 0)
-        self.assertEqual(date.second, 0)
-
-        date = Date("dec 15th '01 at 6:25:01 am")
-        self.assertEqual(date.year, 2001)
-        self.assertEqual(date.month, 12)
-        self.assertEqual(date.day, 15)
-        self.assertEqual(date.hour, 6)
-        self.assertEqual(date.minute, 25)
-        self.assertEqual(date.second, 1)
-
-        self.assertEqual(Date('2012').year, 2012)
-        self.assertEqual(Date('January 2013').month, 1)
-        self.assertEqual(Date('feb 2011').month, 2)
-        self.assertEqual(Date('05/23/2012').month, 5)
-        self.assertEqual(Date('01/10/2015 at 7:30pm').month, 1)
-        self.assertEqual(Date('today').day, now.day)
+        self.assert_date('01/10/2015 at 7:30pm', datetime(2015, 1, 10, 19, 30))
+        self.assert_date('sep 5th, 1988 at 6:24 am', datetime(1988, 9, 5, 6, 24))
+        self.assert_date('2012 feb 2 1:13PM', datetime(2012, 2, 2, 13, 13))
+        self.assert_date('6:41 am on sept 8 2012', datetime(2012, 9, 8, 6, 41))
+        self.assert_date('2013-09-10T10:45:50', datetime(2013, 9, 10, 10, 45, 50))
+        self.assert_date('August 25th, 2014 12:30 PM', datetime(2014, 8, 25, 12, 30))
+        self.assert_date('may 23, 2018 1 pm', datetime(2018, 5, 23, 13))
+        self.assert_date('1-2-13 2 am', datetime(2013, 1, 2, 2))
+        self.assert_date("dec 15th '01 at 6:25:01 am", datetime(2001, 12, 15, 6, 25, 1))
 
         # offset timezones
         self.assertEqual(Date('2014-03-06 15:33:43.764419-05').hour, 20)
@@ -135,10 +74,7 @@ class T(unittest.TestCase):
     def test_timestamp(self):
         ts = 1374681560
         for param in ts, str(ts):
-            date = Date(param)
-            self.assertEqual(date.year, 2013)
-            self.assertEqual(date.month, 7)
-            self.assertEqual(date.day, 24)
+            self.assert_date(param, datetime(2013, 7, 24, 8, 59, 20, 0))
 
     def test_exceptions(self):
         for x in ['yestserday', 'Satruday', Exception]:
@@ -153,7 +89,6 @@ class T(unittest.TestCase):
             self.assertEqual(d.weekday, 1 + x)
 
     def test_offset(self):
-        now = datetime.now()
         self.assert_date(
             'now',
             datetime(2017, 6, 16, 19, 3, 22),
@@ -194,12 +129,7 @@ class T(unittest.TestCase):
 
     def test_adjustment(self):
         d = Date('Jan 1st 2014 at 10 am')
-        self.assertEqual(d.year, 2014)
-        self.assertEqual(d.month, 1)
-        self.assertEqual(d.day, 1)
-        self.assertEqual(d.hour, 10)
-        self.assertEqual(d.minute, 0)
-        self.assertEqual(d.second, 0)
+        self.assert_date(d, datetime(2014, 1, 1, 10))
 
         d.hour = 5
         d.day = 15
@@ -208,13 +138,8 @@ class T(unittest.TestCase):
         d.minute = 40
         d.second = 14
         d.microsecond = 10001
+        self.assert_date(d, datetime(2013, 4, 15, 5, 40, 14, 10001))
 
-        self.assertEqual(d.year, 2013)
-        self.assertEqual(d.month, 4)
-        self.assertEqual(d.day, 15)
-        self.assertEqual(d.hour, 5)
-        self.assertEqual(d.minute, 40)
-        self.assertEqual(d.second, 14)
         self.assertEqual(str(d.date), '2013-04-15 05:40:14.010001')
 
     def test_next_prev(self):
