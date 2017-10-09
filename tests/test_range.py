@@ -193,21 +193,24 @@ class T(unittest.TestCase):
     def test_weekdays(self):
         day_seconds = 24 * 60 * 60
         weekdays = ('monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday')
-        for x, day in enumerate(weekdays):
+        for i, day in enumerate(weekdays):
+            start_date = 17 + (i + 2) % 7
+            self.assert_range(day,
+                              datetime(2017, 6, start_date),
+                              datetime(2017, 6, start_date + 1))
             r = Range(day)
             self.assertEqual(len(r), day_seconds)
-            self.assertEqual(r.start.hour, 0)
-            self.assertEqual(r.start.minute, 0)
-            self.assertEqual(r.start.second, 0)
-            self.assertEqual(r.end.hour, 0)
-            self.assertEqual(r.end.minute, 0)
-            self.assertEqual(r.end.second, 0)
-            self.assertEqual(r.end.weekday, 1 if x+1 == 7 else (2+x))
-            r = Range('next 7 days')
-            # Not calendar days, unlike "next day"
-            # TODO Change code to be like "next day" or create separate text
-            if day != 'friday':
-                self.assertTrue(Date(day) in r, day + ': ' + str(r))
+            self.assertEqual(r.start.weekday, i, r.start.weekday)
+            self.assertEqual(r.end.weekday, (i + 1) % 7, r.end.weekday)
+            self.assertEqual(r.start.isoweekday, i + 1, r.start.isoweekday)
+            self.assertEqual(r.end.isoweekday, (i + 1) % 7 + 1, r.end.isoweekday)
+            d = Date(day)
+            self.assertTrue(d in r, '%s: %s' % (d, r))
+
+        d = Date('now')
+        r = Range('next 7 days')  # Not calendar days, unlike "next day"
+        # TODO Change code to be like "next day" or create separate test
+        self.assertTrue(d in r, '%s: %s' % (d, r))
 
     def test_offset(self):
         self.assert_range(
@@ -377,8 +380,8 @@ class T(unittest.TestCase):
                           datetime(2017, 6, 23))
 
         self.assert_range('this Friday',
-                          datetime(2017, 6, 16),
-                          datetime(2017, 6, 17))
+                          datetime(2017, 6, 23),
+                          datetime(2017, 6, 24))
 
         self.assert_range('this Saturday',
                           datetime(2017, 6, 17),

@@ -17,10 +17,10 @@ class T(unittest.TestCase):
 
         self.assertEqual(_date,
                          expected,
-                         '\n     Now: ' + str(datetime.now())
-                         + '\n    Text: ' + date_str
-                         + '\nExpected: ' + str(expected)
-                         + '\n  Actual: ' + str(_date))
+                         '\n     Now: %s' % str(datetime.now())
+                         + '\n    Text: %s' % date_str
+                         + '\nExpected: %s' % str(expected)
+                         + '\n  Actual: %s' % str(_date))
 
     def test_date_formats(self):
         for date_str in [
@@ -58,17 +58,20 @@ class T(unittest.TestCase):
             # TODO sep 5, 11pm
             self.assert_date(date_str, datetime(2017, 9, 5, 11, 0, 0))
 
-        self.assert_date('01/10/2015 at 7:30pm', datetime(2015, 1, 10, 19, 30))
-        self.assert_date('sep 5th, 1988 at 6:24 am', datetime(1988, 9, 5, 6, 24))
-        self.assert_date('2012 feb 2 1:13PM', datetime(2012, 2, 2, 13, 13))
-        self.assert_date('6:41 am on sept 8 2012', datetime(2012, 9, 8, 6, 41))
-        self.assert_date('2013-09-10T10:45:50', datetime(2013, 9, 10, 10, 45, 50))
-        self.assert_date('August 25th, 2014 12:30 PM', datetime(2014, 8, 25, 12, 30))
-        self.assert_date('may 23, 2018 1 pm', datetime(2018, 5, 23, 13))
-        self.assert_date('1-2-13 2 am', datetime(2013, 1, 2, 2))
-        self.assert_date("dec 15th '01 at 6:25:01 am", datetime(2001, 12, 15, 6, 25, 1))
+        for date_str in [
+            '09/05/2012 at 7:35pm'
+            'Sep 5th, 2012 at 7:35 pm'
+            '2012 sep 5 7:35PM'
+            '7:35 pm on sept 5 2012'
+            '2012-09-05T19:35:00'
+            'September 5th, 2012 7:35 PM'
+            'September 5, 2012 7:35 pm'
+            '9-5-12 7:35 pm'
+            "sep 5th '12 at 7:35:00 am"
+        ]:
+            self.assert_date(date_str, datetime(2012, 9, 5, 19, 35, 0))
 
-        # offset timezones
+        # Offset timezone
         self.assertEqual(Date('2014-03-06 15:33:43.764419-05').hour, 20)
 
     def test_timestamp(self):
@@ -83,10 +86,11 @@ class T(unittest.TestCase):
 
     def test_weekdays(self):
         now = datetime.now()
-        for x, day in enumerate(('monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday')):
+        for i, day in enumerate(('monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday')):
             d = Date(day)
-            self.assertLess(d.date - now, timedelta(7))
-            self.assertEqual(d.weekday, 1 + x)
+            self.assertLess(d.date - now, timedelta(7), day)
+            self.assertEqual(d.weekday, i, day)
+            self.assertEqual(d.isoweekday, 1 + i, day)
 
     def test_offset(self):
         self.assert_date(
@@ -138,7 +142,7 @@ class T(unittest.TestCase):
         d.minute = 40
         d.second = 14
         d.microsecond = 10001
-        self.assert_date(d, datetime(2013, 4, 15, 5, 40, 14, 10001))
+        self.assertEqual(d, datetime(2013, 4, 15, 5, 40, 14, 10001))
 
         self.assertEqual(str(d.date), '2013-04-15 05:40:14.010001')
 
@@ -179,8 +183,8 @@ class T(unittest.TestCase):
         self.assert_date('next wed', datetime(2017, 6, 21))
         self.assert_date('upcoming wed', datetime(2017, 6, 21))
 
-        self.assert_date('fri', datetime(2017, 6, 16))
-        self.assert_date('this fri', datetime(2017, 6, 16))
+        self.assert_date('fri', datetime(2017, 6, 23))
+        self.assert_date('this fri', datetime(2017, 6, 23))
         self.assert_date('last fri', datetime(2017, 6, 9))
         self.assert_date('next fri', datetime(2017, 6, 23))
 

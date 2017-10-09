@@ -166,7 +166,7 @@ class Range(object):
                             start = start.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
 
                         elif delta.startswith('w'):
-                            day = start.day + week_start % 7 - start.weekday
+                            day = start.day + week_start % 7 - start.isoweekday
                             start = start.replace(day=day, hour=0, minute=0, second=0, microsecond=0)
 
                         elif delta.startswith('d'):
