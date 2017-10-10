@@ -162,14 +162,15 @@ class Date(object):
                 if weekday:
                     new_date = new_date.replace(hour=0, minute=0, second=0, microsecond=0)
                     iso = WEEKDAY_ORDINALS.get(weekday)
-                    if iso:
-                        if date.get('next') or context == Context.NEXT:
-                            days = iso - new_date.isoweekday() + (7 if iso <= new_date.isoweekday() else 0)
-                        elif date.get('prev') or context == Context.PREV:
-                            days = iso - new_date.isoweekday() - (7 if iso >= new_date.isoweekday() else 0)
-                        else:
-                            days = iso - new_date.isoweekday() + (7 if iso < new_date.isoweekday() else 0)
-                        new_date = new_date + timedelta(days=days)
+                    if iso is not None:
+                        days = iso - new_date.isoweekday()
+                        if date.get('prev') or context == Context.PREV:
+                            if iso >= new_date.isoweekday():
+                                days -= 7
+                        elif not (days == 0 and context in [Context.PAST, Context.FUTURE]):
+                            if iso <= new_date.isoweekday():
+                                days += 7
+                        new_date += timedelta(days=days)
                 elif relative_day:
                     days = RELATIVE_DAYS.get(re.sub(r'\s+', ' ', relative_day))
                     if days:
@@ -339,9 +340,14 @@ class Date(object):
         self.date = self.date.replace(microsecond=microsecond)
 
     @property
-    def weekday(self):
+    def isoweekday(self):
         if self.date != 'infinity':
             return self.date.isoweekday()
+
+    @property
+    def weekday(self):
+        if self.date != 'infinity':
+            return self.date.weekday()
 
     @property
     def tz(self):

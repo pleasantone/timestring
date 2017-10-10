@@ -84,7 +84,7 @@ def parse(string):
         for k,v in matches.items():
             if v:
                 arg = k.split('_', 1)[0]
-                if arg in ('year', 'month', 'weekday', 'hour', 'minute', 'second'):
+                if arg in ('year', 'month', 'isoweekday', 'weekday', 'hour', 'minute', 'second'):
                     result.setdefault(arg, getattr(date, arg))
         return result
     except Exception as e:

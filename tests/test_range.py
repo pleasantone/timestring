@@ -1,34 +1,37 @@
-from datetime import datetime, timedelta
 import os
 import time
 import unittest
+from datetime import datetime
 
+from ddt import ddt
 from freezegun import freeze_time
 
-from timestring.Range import Range
 from timestring import Context
+from timestring.Range import Range, Date, TimestringInvalid
 
 
 @freeze_time('2017-06-16 19:37:22')
-class RangeTest(unittest.TestCase):
+@ddt
+class T(unittest.TestCase):
     def assert_range(self, range_str, expected_start: datetime,
                      expected_end: datetime, **kw):
-        _range = Range(range_str, **kw)
+        start, end = Range(range_str, **kw)
 
-        self.assertEqual(_range.start,
+        self.assertEqual(start,
                          expected_start,
-                         '\n          Text: ' + range_str \
+                         '\n          Now: ' + str(datetime.now())
+                         + '\n          Text: ' + range_str
                          + '\nExpected start: ' + str(expected_start)
-                         + '\n  Actual start: ' + str(_range.start))
-        self.assertEqual(_range.end,
+                         + '\n  Actual start: ' + str(start))
+
+        self.assertEqual(end,
                          expected_end,
-                         '\n          Text: ' + range_str \
+                         '\n         Now: ' + str(datetime.now())
+                         + '\n        Text: ' + range_str
                          + '\nExpected end: ' + str(expected_end)
-                         + '\n  Actual end: ' + str(_range.end))
+                         + '\n  Actual end: ' + str(end))
 
     def test_date_formats(self):
-        """This should be in test_date.py, except that date ranges start at
-        midnight, while Date() produces a date with the current time."""
         for date_str in [
             'September 5, 2012',
             '2012 5 September',
@@ -36,16 +39,44 @@ class RangeTest(unittest.TestCase):
             'sept 5 2012',
             "sep 5th, '12",
             '5th September, 2012',
-            #TODO: 5th of September, 2012
             '2012/9/5',
             '2012-09-5T',
             '9/5/2012',
+            # TODO: 5th of September, 2012
         ]:
             self.assert_range(date_str,
                               datetime(2012, 9, 5),
                               datetime(2012, 9, 6))
 
         # TODO: 13/5/2012
+
+    def test_timestamp(self):
+        start, end = Range(1374681560)
+        self.assertEqual(start.day, 24)
+        self.assertEqual(end.day, 24)
+
+    def test_exceptions(self):
+        for date_str in ['yestserday', 'Satruday', Exception]:
+            with self.assertRaises(TimestringInvalid):
+                Range(date_str)
+
+    def test_explicit_end(self):
+        self.assert_range('2012 feb 2 1:13PM to 6:41 am on sept 8 2012',
+                          datetime(2012, 2, 2, 13, 13),
+                          datetime(2012, 9, 8, 6, 41))
+
+        self.assert_range('From 04/17/13 04:18:00 to 05/01/13 17:01:00',
+                          datetime(2013, 4, 17, 4, 18),
+                          datetime(2013, 5, 1, 17, 1),
+                          tz='US/Central')
+
+        self.assert_range('from jan 10 2010 5 am to jan 10, 2010 9 am',
+                          datetime(2010, 1, 10, 5),
+                          datetime(2010, 1, 10, 9))
+
+        self.assert_range('from january 10th 2010 to jan 12th 2010',
+                          datetime(2010, 1, 10),
+                          datetime(2010, 1, 12))
 
     def test_implicit(self):
         self.assert_range('2011 nov 11 at 11:11:11',
@@ -104,178 +135,6 @@ class RangeTest(unittest.TestCase):
                           datetime(2017,  6,  16, 11,  0,  0),
                           datetime(2017,  6,  16, 12,  0,  0))
 
-    def test_context(self):
-        now = datetime.now()
-
-        # Current period
-        self.assert_range('2017',
-                          datetime(2017, 1, 1),
-                          now,
-                          context=Context.PAST)
-
-        self.assert_range('2017',
-                          now,
-                          datetime(2018, 1, 1),
-                          context=Context.FUTURE)
-
-        self.assert_range('2017',               # No effect
-                          datetime(2017, 1, 1),
-                          datetime(2018, 1, 1),
-                          context=Context.PREV)
-
-        self.assert_range('2017',               # No effect
-                          datetime(2017, 1, 1),
-                          datetime(2018, 1, 1),
-                          context=Context.NEXT)
-
-        self.assert_range('june',
-                          datetime(2017, 6, 1),
-                          now,
-                          context=Context.PAST)
-
-        self.assert_range('june',
-                          now,
-                          datetime(2017, 7, 1),
-                          context=Context.FUTURE)
-
-        self.assert_range('june',
-                          datetime(2016, 6, 1),
-                          datetime(2016, 7, 1),
-                          context=Context.PREV)
-
-        self.assert_range('june',
-                          datetime(2018, 6, 1),
-                          datetime(2018, 7, 1),
-                          context=Context.NEXT)
-
-        self.assert_range('2017 june',
-                          datetime(2017, 6, 1),
-                          now,
-                          context=Context.PAST)
-
-        self.assert_range('2017 june',
-                          now,
-                          datetime(2017, 7, 1),
-                          context=Context.FUTURE)
-
-        self.assert_range('2017 june',          # No effect
-                          datetime(2017, 6, 1),
-                          datetime(2017, 7, 1),
-                          context=Context.PREV)
-
-        self.assert_range('2017 june',          # No effect
-                          datetime(2017, 6, 1),
-                          datetime(2017, 7, 1),
-                          context=Context.NEXT)
-
-        for context in Context.PAST, Context.FUTURE:
-            # A past period - no effect
-            self.assert_range('2000',
-                              datetime(2000, 1, 1),
-                              datetime(2001, 1, 1),
-                              context=context)
-
-            self.assert_range('last may',
-                              datetime(2017, 5, 1),
-                              datetime(2017, 6, 1),
-                              context=context)
-
-            self.assert_range('2017 may',
-                              datetime(2017, 5, 1),
-                              datetime(2017, 6, 1),
-                              context=context)
-
-            # A future period - no effect
-            self.assert_range('2018',
-                              datetime(2018, 1, 1),
-                              datetime(2019, 1, 1),
-                              context=context)
-
-            self.assert_range('july',
-                              datetime(2017, 7, 1),
-                              datetime(2017, 8, 1),
-                              context=context)
-
-            self.assert_range('2017 july',
-                              datetime(2017, 7, 1),
-                              datetime(2017, 8, 1),
-                              context=context)
-
-        self.assert_range('2018',
-                          datetime(2018, 1, 1),
-                          datetime(2019, 1, 1),
-                          context=Context.PREV)
-
-        self.assert_range('2018',
-                          datetime(2018, 1, 1),
-                          datetime(2019, 1, 1),
-                          context=Context.NEXT)
-
-        self.assert_range('april',
-                          datetime(2017, 4, 1),
-                          datetime(2017, 5, 1),
-                          context=Context.PREV)
-
-        self.assert_range('april',
-                          datetime(2018, 4, 1),
-                          datetime(2018, 5, 1),
-                          context=Context.NEXT)
-
-        self.assert_range('july',
-                          datetime(2016, 7, 1),
-                          datetime(2016, 8, 1),
-                          context=Context.PREV)
-
-        self.assert_range('july',
-                          datetime(2017, 7, 1),
-                          datetime(2017, 8, 1),
-                          context=Context.NEXT)
-
-        self.assert_range('2017 july',
-                          datetime(2017, 7, 1),
-                          datetime(2017, 8, 1),
-                          context=Context.PREV)
-
-        self.assert_range('2017 july',
-                          datetime(2017, 7, 1),
-                          datetime(2017, 8, 1),
-                          context=Context.NEXT)
-
-    def test_implicit_date_change(self):
-        # Date change between start and end
-        self.assert_range('11p',
-                          datetime(2017, 6, 16, 23, 0, 0),
-                          datetime(2017, 6, 17, 0, 0, 0))
-
-        self.assert_range('11:59pm on Feb 28',
-                          datetime(2018, 2, 28, 23, 59, 0),
-                          datetime(2018, 3, 1, 0, 0, 0))
-
-        self.assert_range('11:59pm on dec 31',
-                          datetime(2017, 12, 31, 23, 59, 0),
-                          datetime(2018, 1, 1, 0, 0, 0))
-
-    def test_explicit_end(self):
-        _range = Range('2012 feb 2 1:13PM to 6:41 am on sept 8 2012')
-        self.assertEqual(_range[0].year, 2012)
-        self.assertEqual(_range[0].month, 2)
-        self.assertEqual(_range[0].day, 2)
-        self.assertEqual(_range[0].hour, 13)
-        self.assertEqual(_range[0].minute, 13)
-        self.assertEqual(_range[1].year, 2012)
-        self.assertEqual(_range[1].month, 9)
-        self.assertEqual(_range[1].day, 8)
-        self.assertEqual(_range[1].hour, 6)
-        self.assertEqual(_range[1].minute, 41)
-
-        self.assert_range('from jan 10 2010 5 am to jan 10, 2010 9 am',
-                          datetime(2010, 1, 10, 5),
-                          datetime(2010, 1, 10, 9))
-
-        self.assert_range('from january 10th 2010 to jan 12th 2010',
-                          datetime(2010, 1, 10),
-                          datetime(2010, 1, 12))
-
         self.assert_range('january 10 to jan 12',
                           datetime(2018, 1, 10),
                           datetime(2018, 1, 12))
@@ -292,6 +151,11 @@ class RangeTest(unittest.TestCase):
                           datetime(2017, 6, 16, 22),
                           datetime(2017, 6, 17, 11))
 
+    def test_implicit_end(self):
+        self.assert_range('tomorrow 10am to 5pm',
+                          datetime(2017, 6, 17, 10),
+                          datetime(2017, 6, 17, 17))
+
         # TODO: from jan 10th 2010 to jan 11
         # TODO: jan 10 from 5 to 9 am
         # TODO: from jan 10th 10am to 11am
@@ -304,82 +168,234 @@ class RangeTest(unittest.TestCase):
         # TODO: jan 10 to 11, 2010
         # TODO: 10 to 11 pm
 
-    def test_implicit_end_year_is_next_year(self):
-        _range = Range("between january 15th at 3 am and august 5th 5pm")
-        self.assertEqual(_range[0].year, 2018)
-        self.assertEqual(_range[0].month, 1)
-        self.assertEqual(_range[0].day, 15)
-        self.assertEqual(_range[0].hour, 3)
-        self.assertEqual(_range[0].minute, 0)
-        self.assertEqual(_range[0].second, 0)
-        self.assertEqual(_range[1].year, 2018)
-        self.assertEqual(_range[1].month, 8)
-        self.assertEqual(_range[1].day, 5)
-        self.assertEqual(_range[1].hour, 17)
-        self.assertEqual(_range[1].minute, 0)
-        self.assertEqual(_range[1].second, 0)
+    def test_implicit_date_change(self):
+        # Date change between start and end
+        self.assert_range('11p',
+                          datetime(2017, 6, 16, 23, 0, 0),
+                          datetime(2017, 6, 17, 0, 0, 0))
 
-    def test_relative_year(self):
-        self.assert_range('this year',
-                          datetime(2017, 1, 1, 0, 0, 0),
+        self.assert_range('11:59pm on Feb 28',
+                          datetime(2018, 2, 28, 23, 59, 0),
+                          datetime(2018, 3, 1, 0, 0, 0))
+
+        self.assert_range('11:59pm on dec 31',
+                          datetime(2017, 12, 31, 23, 59, 0),
                           datetime(2018, 1, 1, 0, 0, 0))
 
+        self.assert_range('december',
+                          datetime(2017, 12, 1),
+                          datetime(2018, 1, 1))
+
+        self.assert_range('between january 15th at 3 am and august 5th 5pm',
+                          datetime(2018, 1, 15, 3),
+                          datetime(2018, 8, 5, 17))
+
+    def test_weekdays(self):
+        day_seconds = 24 * 60 * 60
+        weekdays = ('monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday')
+        for i, day in enumerate(weekdays):
+            start_date = 17 + (i + 2) % 7
+            self.assert_range(day,
+                              datetime(2017, 6, start_date),
+                              datetime(2017, 6, start_date + 1))
+            r = Range(day)
+            self.assertEqual(len(r), day_seconds)
+            self.assertEqual(r.start.weekday, i, r.start.weekday)
+            self.assertEqual(r.end.weekday, (i + 1) % 7, r.end.weekday)
+            self.assertEqual(r.start.isoweekday, i + 1, r.start.isoweekday)
+            self.assertEqual(r.end.isoweekday, (i + 1) % 7 + 1, r.end.isoweekday)
+            d = Date(day)
+            self.assertTrue(d in r, '%s: %s' % (d, r))
+
+        d = Date('now')
+        r = Range('next 7 days')  # Not calendar days, unlike "next day"
+        # TODO Change code to be like "next day" or create separate test
+        self.assertTrue(d in r, '%s: %s' % (d, r))
+
+    def test_offset(self):
+        self.assert_range(
+            'this month',
+            datetime(2017, 6, 5, 4, 3, 2, 1),
+            datetime(2017, 7, 5, 4, 3, 2, 1),
+            offset=dict(day=5, hour=4, minute=3, second=2, microsecond=1)
+        )
+
+    def test_lengths(self):
+        day = 24 * 60 * 60
+        week = 7 * day
+        self.assertEqual(len(Range('next 10 weeks')), 10 * week)
+        self.assertEqual(len(Range('3 weeks')), 3 * week)
+        self.assertEqual(len(Range('this week')), week)
+        self.assertEqual(len(Range('yesterday')), day)
+        self.assertEqual(len(Range('6d')), 6 * day)
+        self.assertEqual(len(Range('6 d')), 6 * day)
+        self.assertEqual(len(Range('6 days')), 6 * day)
+        self.assertEqual(len(Range('12h')), 12 * 60 * 60)
+        self.assertEqual(len(Range('6 h')), 6 * 60 * 60)
+        self.assertEqual(len(Range('10m')), 60 * 10)
+        self.assertEqual(len(Range('10 m')), 60 * 10)
+        self.assertEqual(len(Range('10 s')), 10)
+        self.assertEqual(len(Range('10s')), 10)
+
+    def test_contains(self):
+        self.assertTrue(Date('yesterday') in Range('last 7 days'))
+        self.assertTrue(Date('today') in Range('this month'))
+        self.assertTrue(Date('today') in Range('this month'))
+        self.assertTrue(Range('this month') in Range('this year'))
+        self.assertTrue(Range('this day') in Range('this week'))
+        self.assertTrue(Date('yesterday') in Range('10 days'))
+        self.assertTrue(Date('last tuesday') in Range('last 14 days'))
+        self.assertTrue(Range('10 days') in Range('100 days'))
+        self.assertTrue(Date('today') not in Range('last year'))
+        # The following cases are true for some dates, including the frozen date
+        self.assertTrue(Range('this week') in Range('this month'))
+        self.assertTrue(Range('this week') in Range('this year'))
+
+    def test_compare(self):
+        self.assertFalse(Range('10 days') == Date('yesterday'))
+        self.assertTrue(Range('next 2 weeks') > Range('1 year'))
+        self.assertTrue(Range('yesterday') < Range('now'))
+
+    def test_cut(self):
+        range_1 = Range('from january 10th 2010 to february 2nd 2010').cut('10 days')
+        range_1.start.microsecond = 1
+        range_1.end.microsecond = 1
+        range_2 = Range('from january 10th 2010 to jan 20th 2010')
+        range_2.start.microsecond = 1
+        range_2.end.microsecond = 1
+        self.assertEqual(range_1, range_2)
+
+    def test_infinity(self):
+        infinity = Date('infinity')
+        self.assertTrue(infinity > 'now')
+        self.assertTrue(infinity > 'today')
+        self.assertTrue(infinity > 'next week')
+
+        self.assertTrue(infinity not in Range('this year'))
+        self.assertTrue(infinity not in Range('next 5 years'))
+        self.assertTrue(Range('month') < infinity)
+
+        r = Range('today', 'infinity')
+        self.assertTrue('next 5 years' in r)
+        self.assertTrue(Date('today') in r)
+        self.assertTrue(infinity in r)
+        self.assertFalse(infinity > r)
+        self.assertFalse(r > infinity)
+
+        r = Range('["2013-12-09 06:57:46.54502-05",infinity)')
+        self.assertTrue(r.end == 'infinity')
+        self.assertTrue('next 5 years' in r)
+        self.assertTrue(Date('today') in r)
+        self.assertTrue(infinity in r)
+        self.assertFalse(infinity > r)
+        self.assertFalse(r > infinity)
+        self.assertEqual(r.start, datetime(2013, 12, 9, 11, 57, 46, 545020))
+
+    def test_this(self):
+        now = datetime.now()
+
         self.assert_range('this year',
-                          datetime(2017, 1, 1, 0, 0, 0),
+                          datetime(2017, 1, 1),
+                          datetime(2018, 1, 1))
+        self.assertTrue(Date('today') in Range('this year'))
+
+        self.assert_range('this year',
+                          datetime(2017, 1, 1),
                           datetime.now(),
                           context=Context.PAST)
 
         self.assert_range('this year',
-                          datetime.now(),
-                          datetime(2018, 1, 1, 0, 0, 0),
+                          now,
+                          datetime(2018, 1, 1),
                           context=Context.FUTURE)
 
-        self.assert_range('last year',
-                          datetime(2016, 1, 1, 0, 0, 0),
-                          datetime(2017, 1, 1, 0, 0, 0))
-
-        self.assert_range('next year',
-                          datetime(2018, 1, 1, 0, 0, 0),
-                          datetime(2019, 1, 1, 0, 0, 0))
-
-    def test_relative_month(self):
         self.assert_range('this month',
-                          datetime(2017, 6, 1, 0, 0, 0),
-                          datetime(2017, 7, 1, 0, 0, 0))
+                          datetime(2017, 6, 1),
+                          datetime(2017, 7, 1))
 
         self.assert_range('current month',
-                          datetime(2017, 6, 1, 0, 0, 0),
-                          datetime(2017, 7, 1, 0, 0, 0))
+                          datetime(2017, 6, 1),
+                          datetime(2017, 7, 1))
 
         self.assert_range('this month',
-                          datetime(2017, 6, 1, 0, 0, 0),
-                          datetime.now(),
+                          datetime(2017, 6, 1),
+                          now,
                           context=Context.PAST)
 
         self.assert_range('this month',
-                          datetime.now(),
-                          datetime(2017, 7, 1, 0, 0, 0),
+                          now,
+                          datetime(2017, 7, 1),
                           context=Context.FUTURE)
 
-        self.assert_range('next month',
-                          datetime(2017, 7, 1, 0, 0, 0),
-                          datetime(2017, 8, 1, 0, 0, 0))
+        with freeze_time(datetime(2017, 6, 1)):
+            self.assert_range('this week',
+                              datetime(2017, 5, 29),
+                              datetime(2017, 6, 5))
 
-        self.assert_range('upcoming month',
-                          datetime(2017, 7, 1, 0, 0, 0),
-                          datetime(2017, 8, 1, 0, 0, 0))
+        self.assert_range('this week',
+                          datetime(2017, 6, 12),
+                          datetime(2017, 6, 19))
+
+        self.assert_range('this week',
+                          datetime(2017, 6, 12),
+                          now,
+                          context=Context.PAST)
+
+        self.assert_range('this week',
+                          now,
+                          datetime(2017, 6, 19),
+                          context=Context.FUTURE)
+
+        self.assert_range('this day',
+                          datetime(2017, 6, 16),
+                          datetime(2017, 6, 17), )
+
+        self.assert_range('this day',
+                          datetime(2017, 6, 16),
+                          now,
+                          context=Context.PAST)
+
+        self.assert_range('this day',
+                          now,
+                          datetime(2017, 6, 17),
+                          context=Context.FUTURE)
+
+        self.assert_range('this hour',
+                          datetime(2017, 6, 16, 19),
+                          datetime(2017, 6, 16, 20))
+
+        self.assert_range('this minute',
+                          datetime(2017, 6, 16, 19, 37),
+                          datetime(2017, 6, 16, 19, 38))
+
+        self.assert_range('this second',
+                          datetime(2017, 6, 16, 19, 37, 22),
+                          datetime(2017, 6, 16, 19, 37, 23))
+
+        self.assert_range('this Thursday',
+                          datetime(2017, 6, 22),
+                          datetime(2017, 6, 23))
+
+        self.assert_range('this Friday',
+                          datetime(2017, 6, 23),
+                          datetime(2017, 6, 24))
+
+        self.assert_range('this Saturday',
+                          datetime(2017, 6, 17),
+                          datetime(2017, 6, 18))
+
+    def test_last(self):
+        self.assert_range('last year',
+                          datetime(2016, 1, 1),
+                          datetime(2017, 1, 1))
 
         self.assert_range('last month',
-                          datetime(2017, 5, 1, 0, 0, 0),
-                          datetime(2017, 6, 1, 0, 0, 0))
+                          datetime(2017, 5, 1),
+                          datetime(2017, 6, 1))
 
         self.assert_range('previous month',
-                          datetime(2017, 5, 1, 0, 0, 0),
-                          datetime(2017, 6, 1, 0, 0, 0))
-
-        self.assert_range('next 2 months',
-                          datetime(2017, 6, 16, 19, 37, 22),
-                          datetime(2017, 8, 16, 19, 37, 22))
+                          datetime(2017, 5, 1),
+                          datetime(2017, 6, 1))
 
         self.assert_range('last 5 months',
                           datetime(2017, 1, 16, 19, 37, 22),
@@ -389,155 +405,93 @@ class RangeTest(unittest.TestCase):
                           datetime(2015, 6, 16, 19, 37, 22),
                           datetime(2017, 6, 16, 19, 37, 22))
 
-    def test_relative_week(self):
-        self.assert_range('this week',
-                          datetime(2017, 6, 12),
-                          datetime(2017, 6, 19))
-
-        self.assert_range('this week',
-                          datetime(2017, 6, 12),
-                          datetime.now(),
-                          context=Context.PAST)
-
-        self.assert_range('this week',
-                          datetime.now(),
-                          datetime(2017, 6, 19),
-                          context=Context.FUTURE)
-
         self.assert_range('last week',
                           datetime(2017, 6, 5),
-                          datetime(2017, 6, 12),)
+                          datetime(2017, 6, 12), )
+
+        self.assert_range('last 2 days',
+                          datetime(2017, 6, 14, 19, 37, 22),
+                          datetime.now())
+
+        self.assert_range('last 5 hours',
+                          datetime(2017, 6, 16, 14, 37, 22),
+                          datetime(2017, 6, 16, 19, 37, 22))
+
+        self.assert_range('last Thursday',
+                          datetime(2017, 6, 15),
+                          datetime(2017, 6, 16))
+
+        self.assert_range('last Friday',
+                          datetime(2017, 6, 9),
+                          datetime(2017, 6, 10))
+
+        self.assert_range('last Saturday',
+                          datetime(2017, 6, 10),
+                          datetime(2017, 6, 11))
+
+    def test_next(self):
+        self.assert_range('next year',
+                          datetime(2018, 1, 1),
+                          datetime(2019, 1, 1))
+
+        self.assert_range('next month',
+                          datetime(2017, 7, 1),
+                          datetime(2017, 8, 1))
+
+        self.assert_range('upcoming month',
+                          datetime(2017, 7, 1),
+                          datetime(2017, 8, 1))
+
+        self.assert_range('next 2 months',
+                          datetime(2017, 6, 16, 19, 37, 22),
+                          datetime(2017, 8, 16, 19, 37, 22))
 
         self.assert_range('next week',
                           datetime(2017, 6, 19),
                           datetime(2017, 6, 26))
 
+        self.assert_range('next 2 days',
+                          datetime.now(),
+                          datetime(2017, 6, 18, 19, 37, 22))
+
+        self.assert_range('next 4 hours',
+                          datetime(2017, 6, 16, 19, 37, 22),
+                          datetime(2017, 6, 16, 23, 37, 22))
+
+        self.assert_range('next Thursday',
+                          datetime(2017, 6, 22),
+                          datetime(2017, 6, 23))
+
+        self.assert_range('next Friday',
+                          datetime(2017, 6, 23),
+                          datetime(2017, 6, 24))
+
+        self.assert_range('next Saturday',
+                          datetime(2017, 6, 17),
+                          datetime(2017, 6, 18))
+
+        self.assertTrue(Date('next tuesday') in Range('next 14 days'))
+
     def test_relative_day(self):
         self.assert_range('today',
                           datetime(2017, 6, 16),
-                          datetime(2017, 6, 17),)
-
-        self.assert_range('today',
-                          datetime(2017, 6, 16),
-                          datetime.now(),
-                          context=Context.PAST)
-
-        self.assert_range('today',
-                          datetime.now(),
-                          datetime(2017, 6, 17),
-                          context=Context.FUTURE)
+                          datetime(2017, 6, 17))
 
         self.assert_range('tomorrow',
                           datetime(2017, 6, 17),
                           datetime(2017, 6, 18))
 
-        self.assert_range('day after tomorrow',
-                          datetime(2017, 6, 18),
-                          datetime(2017, 6, 19))
-
         self.assert_range('yesterday',
                           datetime(2017, 6, 15),
                           datetime(2017, 6, 16))
 
+        self.assert_range('day after tomorrow',
+                          datetime(2017, 6, 18),
+                          datetime(2017, 6, 19))
+
         self.assert_range('day before yesterday',
                           datetime(2017, 6, 14),
                           datetime(2017, 6, 15))
-
-        self.assert_range('next 2 days',
-                          datetime.now(),
-                          datetime.now() + timedelta(days=2))
-
-        self.assert_range('last 2 days',
-                          datetime.now() - timedelta(days=2),
-                          datetime.now())
-
-    def test_relative_weekday_today(self):
-        """
-        For current day of week. E.g., if today is Friday:
-            'Friday' = 'this Friday' = Friday this week
-            'next Friday' = Friday of next week
-            'last Friday' = Friday of last week
-        """
-        weekday = datetime.now().strftime('%A')
-
-        self.assert_range(weekday,
-                          datetime(2017, 6, 16),
-                          datetime(2017, 6, 17))
-
-        self.assert_range('this ' + weekday,
-                          datetime(2017, 6, 16),
-                          datetime(2017, 6, 17))
-
-        self.assert_range(weekday,
-                          datetime(2017, 6, 16),
-                          datetime.now(),
-                          context=Context.PAST)
-
-        self.assert_range(weekday,
-                          datetime.now(),
-                          datetime(2017, 6, 17),
-                          context=Context.FUTURE)
-
-        self.assert_range('next ' + weekday,
-                          datetime(2017, 6, 23),
-                          datetime(2017, 6, 24))
-
-        self.assert_range('upcoming ' + weekday,
-                          datetime(2017, 6, 23),
-                          datetime(2017, 6, 24))
-
-        self.assert_range('last ' + weekday,
-                          datetime(2017, 6, 9),
-                          datetime(2017, 6, 10))
-
-        self.assert_range('previous ' + weekday,
-                          datetime(2017, 6, 9),
-                          datetime(2017, 6, 10))
-
-    def test_relative_weekday_yesterday(self):
-        """
-        For past days of week
-        If today is Friday, 'Thursday' = 'this Thursday' = 'next Thursday'
-        """
-        yesterday = datetime.now() + timedelta(days=-1)
-        weekday = yesterday.strftime('%A')
-
-        start = datetime(2017, 6, 22)
-        end = datetime(2017, 6, 23)
-
-        self.assert_range(weekday, start, end)
-        self.assert_range('this ' + weekday, start, end)
-        self.assert_range('next ' + weekday, start, end)
-        self.assert_range('last ' + weekday,
-                          datetime(2017, 6, 15),
-                          datetime(2017, 6, 16))
-
-    def test_relative_weekday_tomorrow(self):
-        """
-        For future days of week
-        If today is Friday, 'Saturday' = 'this Saturday' = 'next Saturday'
-        """
-        tomorrow = datetime.now() + timedelta(days=1)
-        weekday = tomorrow.strftime('%A')
-
-        start = datetime(2017, 6, 17)
-        end = datetime(2017, 6, 18)
-
-        self.assert_range(weekday, start, end)
-        self.assert_range('this ' + weekday, start, end)
-        self.assert_range('next ' + weekday, start, end)
-        self.assert_range('last ' + weekday,
-                          datetime(2017, 6, 10),
-                          datetime(2017, 6, 11))
-
-    def test_relative_hour(self):
-        self.assert_range('last 5 hours',
-                          datetime(2017, 6, 16, 14, 37, 22),
-                          datetime(2017, 6, 16, 19, 37, 22))
-
-        self.assert_range('next 4 hours',
-                          datetime(2017, 6, 16, 19, 37, 22),
-                          datetime(2017, 6, 16, 23, 37, 22))
 
     def test_ago(self):
         self.assert_range('2 years ago',
@@ -729,7 +683,7 @@ class RangeTest(unittest.TestCase):
         self.assert_range('since 45 minutes ago', datetime(2017, 6, 16, 18, 52), now)
         self.assert_range('since 45 seconds ago', datetime(2017, 6, 16, 19, 36, 37), now)
 
-        # TODO "Since tomorrow" etc: error or guess or infinity or unknown
+        # TODO 'Since tomorrow' etc: error or guess or infinity or unknown
 
     def test_until(self):
         now = datetime.now()
@@ -866,6 +820,236 @@ class RangeTest(unittest.TestCase):
                           datetime(2017, 6, 19),
                           datetime(2017, 6, 20),
                           week_start=0)
+
+    def test_until_implicit(self):
+        now = datetime.now()
+
+        # 1 year (till now)
+        start, end = Range('1 year')
+        self.assertEqual(start.year, now.year - 1)
+        self.assertEqual(start.month, now.month)
+        self.assertEqual(start.day, now.day)
+        self.assertEqual(start.hour, now.hour)
+        self.assertEqual(start.minute, now.minute)
+        self.assertEqual(end.year, now.year)
+        self.assertEqual(end.month, now.month)
+        self.assertEqual(end.day, now.day)
+        self.assertEqual(end.hour, now.hour)
+        self.assertEqual(end.minute, now.minute)
+
+    def test_context_past(self):
+        now = datetime.now()
+        # Current period
+        self.assert_range('2017',
+                          datetime(2017, 1, 1),
+                          now,
+                          context=Context.PAST)
+
+        self.assert_range('june',
+                          datetime(2017, 6, 1),
+                          now,
+                          context=Context.PAST)
+
+        self.assert_range('2017 june',
+                          datetime(2017, 6, 1),
+                          now,
+                          context=Context.PAST)
+
+        self.assert_range('today',
+                          datetime(2017, 6, 16),
+                          now,
+                          context=Context.PAST)
+
+        self.assert_range('friday',
+                          datetime(2017, 6, 16),
+                          now,
+                          context=Context.PAST)
+
+        # Specified past - no effect
+        self.assert_range('2000',
+                          datetime(2000, 1, 1),
+                          datetime(2001, 1, 1),
+                          context=Context.PAST)
+
+        self.assert_range('last may',
+                          datetime(2017, 5, 1),
+                          datetime(2017, 6, 1),
+                          context=Context.PAST)
+
+        self.assert_range('2017 may',
+                          datetime(2017, 5, 1),
+                          datetime(2017, 6, 1),
+                          context=Context.PAST)
+
+        self.assert_range('last thursday',
+                          datetime(2017, 6, 15),
+                          datetime(2017, 6, 16),
+                          context=Context.PAST)
+
+        # Specified future - no effect
+        self.assert_range('2018',
+                          datetime(2018, 1, 1),
+                          datetime(2019, 1, 1),
+                          context=Context.PAST)
+
+        self.assert_range('july',
+                          datetime(2017, 7, 1),
+                          datetime(2017, 8, 1),
+                          context=Context.PAST)
+
+        self.assert_range('2017 july',
+                          datetime(2017, 7, 1),
+                          datetime(2017, 8, 1),
+                          context=Context.PAST)
+
+        self.assert_range('saturday',
+                          datetime(2017, 6, 17),
+                          datetime(2017, 6, 18),
+                          context=Context.PAST)
+
+    def test_context_future(self):
+        now = datetime.now()
+        # Current period
+        self.assert_range('2017',
+                          now,
+                          datetime(2018, 1, 1),
+                          context=Context.FUTURE)
+
+        self.assert_range('june',
+                          now,
+                          datetime(2017, 7, 1),
+                          context=Context.FUTURE)
+
+        self.assert_range('2017 june',
+                          now,
+                          datetime(2017, 7, 1),
+                          context=Context.FUTURE)
+
+        self.assert_range('today',
+                          now,
+                          datetime(2017, 6, 17),
+                          context=Context.FUTURE)
+
+        self.assert_range('friday',
+                          now,
+                          datetime(2017, 6, 17),
+                          context=Context.FUTURE)
+
+        # Specified past - no effect
+        self.assert_range('2000',
+                          datetime(2000, 1, 1),
+                          datetime(2001, 1, 1),
+                          context=Context.FUTURE)
+
+        self.assert_range('last may',
+                          datetime(2017, 5, 1),
+                          datetime(2017, 6, 1),
+                          context=Context.FUTURE)
+
+        self.assert_range('2017 may',
+                          datetime(2017, 5, 1),
+                          datetime(2017, 6, 1),
+                          context=Context.FUTURE)
+
+        self.assert_range('thursday',
+                          datetime(2017, 6, 22),
+                          datetime(2017, 6, 23),
+                          context=Context.FUTURE)
+
+        # Specified future - no effect
+        self.assert_range('2018',
+                          datetime(2018, 1, 1),
+                          datetime(2019, 1, 1),
+                          context=Context.FUTURE)
+
+        self.assert_range('july',
+                          datetime(2017, 7, 1),
+                          datetime(2017, 8, 1),
+                          context=Context.FUTURE)
+
+        self.assert_range('2017 july',
+                          datetime(2017, 7, 1),
+                          datetime(2017, 8, 1),
+                          context=Context.FUTURE)
+
+        self.assert_range('saturday',
+                          datetime(2017, 6, 17),
+                          datetime(2017, 6, 18),
+                          context=Context.FUTURE)
+
+    def context_prev(self):
+        self.assert_range('2017',               # No effect
+                          datetime(2017, 1, 1),
+                          datetime(2018, 1, 1),
+                          context=Context.PREV)
+
+        self.assert_range('june',
+                          datetime(2016, 6, 1),
+                          datetime(2016, 7, 1),
+                          context=Context.PREV)
+
+        self.assert_range('2017 june',          # No effect
+                          datetime(2017, 6, 1),
+                          datetime(2017, 7, 1),
+                          context=Context.PREV)
+
+        self.assert_range('2018',
+                          datetime(2018, 1, 1),
+                          datetime(2019, 1, 1),
+                          context=Context.PREV)
+
+        self.assert_range('april',
+                          datetime(2017, 4, 1),
+                          datetime(2017, 5, 1),
+                          context=Context.PREV)
+
+        self.assert_range('july',
+                          datetime(2016, 7, 1),
+                          datetime(2016, 8, 1),
+                          context=Context.PREV)
+
+        self.assert_range('2017 july',
+                          datetime(2017, 7, 1),
+                          datetime(2017, 8, 1),
+                          context=Context.PREV)
+
+    def context_next(self):
+        self.assert_range('2017',               # No effect
+                          datetime(2017, 1, 1),
+                          datetime(2018, 1, 1),
+                          context=Context.NEXT)
+
+        self.assert_range('june',
+                          datetime(2018, 6, 1),
+                          datetime(2018, 7, 1),
+                          context=Context.NEXT)
+
+        self.assert_range('2017 june',          # No effect
+                          datetime(2017, 6, 1),
+                          datetime(2017, 7, 1),
+                          context=Context.NEXT)
+
+
+        self.assert_range('2018',
+                          datetime(2018, 1, 1),
+                          datetime(2019, 1, 1),
+                          context=Context.NEXT)
+
+        self.assert_range('april',
+                          datetime(2018, 4, 1),
+                          datetime(2018, 5, 1),
+                          context=Context.NEXT)
+
+        self.assert_range('july',
+                          datetime(2017, 7, 1),
+                          datetime(2017, 8, 1),
+                          context=Context.NEXT)
+
+        self.assert_range('2017 july',
+                          datetime(2017, 7, 1),
+                          datetime(2017, 8, 1),
+                          context=Context.NEXT)
+
 
 def main():
     os.environ['TZ'] = 'UTC'
