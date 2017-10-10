@@ -299,14 +299,6 @@ class T(unittest.TestCase):
                           datetime(2018, 1, 1))
         self.assertTrue(Date('today') in Range('this year'))
 
-        self.assert_range('this month',
-                          datetime(2017, 6, 1),
-                          datetime(2017, 7, 1))
-
-        self.assert_range('this year',
-                          datetime(2017, 1, 1),
-                          datetime(2018, 1, 1))
-
         self.assert_range('this year',
                           datetime(2017, 1, 1),
                           datetime.now(),
@@ -334,6 +326,11 @@ class T(unittest.TestCase):
                           now,
                           datetime(2017, 7, 1),
                           context=Context.FUTURE)
+
+        with freeze_time(datetime(2017, 6, 1)):
+            self.assert_range('this week',
+                              datetime(2017, 5, 29),
+                              datetime(2017, 6, 5))
 
         self.assert_range('this week',
                           datetime(2017, 6, 12),

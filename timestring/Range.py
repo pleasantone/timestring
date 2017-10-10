@@ -1,7 +1,7 @@
 import re
 import pytz
 from copy import copy
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from timestring.Date import Date
 from timestring import TimestringInvalid, Context
@@ -166,8 +166,8 @@ class Range(object):
                             start = start.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
 
                         elif delta.startswith('w'):
-                            day = start.day + week_start % 7 - start.isoweekday
-                            start = start.replace(day=day, hour=0, minute=0, second=0, microsecond=0)
+                            start.date -= timedelta(days=start.isoweekday - week_start % 7)
+                            start = start.replace(hour=0, minute=0, second=0, microsecond=0)
 
                         elif delta.startswith('d'):
                             start = start.replace(hour=0, minute=0, second=0, microsecond=0)
@@ -255,7 +255,7 @@ class Range(object):
                         start = now
 
             else:
-                raise TimestringInvalid("Invalid timestring request")
+                raise TimestringInvalid('Invalid range: %s' % start)
 
             if end is None:
                 # no end provided, so assume 24 hours
