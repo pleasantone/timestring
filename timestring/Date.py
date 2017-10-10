@@ -1,7 +1,6 @@
 import re
 import time
 import pytz
-import math
 from copy import copy
 from datetime import datetime, timedelta
 
@@ -44,6 +43,14 @@ DAYTIMES = dict(
     night=21,
     nighttime=21,
     midnight=24
+)
+TIMEDELTA_UNITS = dict(
+    w='weeks',
+    d='days',
+    h='hours',
+    m='minutes',
+    s='seconds',
+    u='microseconds',
 )
 
 
@@ -96,15 +103,15 @@ class Date(object):
 
             # TODO Refactor
             if isinstance(date, dict):  # This will always be True
-                delta = date.get('delta') or date.get('delta_2')
+                unit = date.get('delta') or date.get('delta')
                 num = date.get('num')
 
                 if date.get('unixtime'):
                     new_date = datetime.fromtimestamp(int(date.get('unixtime')))
 
                 # Number of (days|...) [ago]
-                elif num and delta:
-                    delta = delta.lower()
+                elif num and unit:
+                    unit = unit.lower()
                     if date.get('ago') or context == Context.PREV or date.get('prev'):
                         sign = -1
                     elif date.get('in') or date.get('from_now') or context == Context.NEXT or date.get('next'):
@@ -112,50 +119,7 @@ class Date(object):
                     else:
                         raise TimestringInvalid('Missing relationship such as "ago" or "from now"')
 
-                    if 'couple' in (num or ''):
-                        mag = 2
-                    else:
-                        mag = int(text2num(num or 'one'))
-
-                    i = sign * mag
-
-                    if delta.startswith('y'):
-                        try:
-                            new_date = new_date.replace(year=new_date.year + i)
-                        except ValueError:  # Leap date in a non-leap year
-                            new_date += timedelta(days=365 * i)
-                    elif delta.startswith('month'):
-                        try:
-                            month = new_date.month + i
-                            new_date = new_date.replace(
-                                year=new_date.year + month // 12,
-                                month=abs(month) % 12
-                            )
-                        except ValueError:  # No such day in that month
-                            new_date += timedelta(days=30 * i)
-
-                    elif delta.startswith('q'):
-                        # TODO This section is not working
-                        q1, q2, q3, q4 = datetime(new_date.year, 1, 1), datetime(new_date.year, 4, 1), datetime(new_date.year, 7, 1), datetime(new_date.year, 10, 1)
-                        if q1 <= new_date < q2:
-                            # We are in Q1
-                            if i == -1:
-                                new_date = datetime(new_date.year-1, 10, 1)
-                            else:
-                                new_date = q2
-                        elif q2 <= new_date < q3:
-                            # We are in Q2
-                            pass
-                        elif q3 <= new_date < q4:
-                            # We are in Q3
-                            pass
-                        else:
-                            # We are in Q4
-                            pass
-                        new_date += timedelta(days= 91 * i)
-
-                    else:
-                        new_date += timedelta(**{delta:i})
+                    new_date = Date(new_date).plus_(num, unit, sign).date
 
                 weekday = date.get('weekday')
                 relative_day = date.get('relative_day')
@@ -262,7 +226,7 @@ class Date(object):
                     new_date = new_date.replace(month=1)
                 if (year != [] or month) and weekday is None and not (day or hour):
                     new_date = new_date.replace(day=1)
-                if not hour and daytime is None and not delta:
+                if not hour and daytime is None and not unit:
                     new_date = new_date.replace(hour=0, minute=0, second=0)
 
             self.date = new_date
@@ -369,58 +333,90 @@ class Date(object):
         else:
             return Date('infinity')
 
-    def adjust(self, to):
-        '''
-        Adjusts the time from kwargs to timedelta
-        **Will change this object**
+    def plus_(self, num, unit: str, sign: int = 1):
+        assert sign in [-1, 1]
+        if 'couple' in (num or ''):
+            mag = 2
+        else:
+            try:
+                mag = float(num or 1)
+            except ValueError:
+                mag = int(text2num(num or 'one'))
 
-        return new copy of self
-        '''
+        n = sign * mag
+        whole = int(n)
+        fraction = n - whole
+
+        unit = unit.lower().strip()
+        new_date = copy(self.date)
+        if unit.startswith('y'):
+            try:
+                new_date = new_date.replace(year=new_date.year + whole)
+                new_date += timedelta(days=365 * fraction)
+            except ValueError:  # Leap date in a non-leap year
+                new_date += timedelta(days=365 * n)
+        elif unit.startswith('month'):
+            try:
+                month = new_date.month + whole
+                new_date = new_date.replace(
+                    year=new_date.year + month // 12,
+                    month=abs(month) % 12
+                )
+                new_date += timedelta(days=30 * fraction)
+            except ValueError:  # No such day in that month
+                new_date += timedelta(days=30 * n)
+
+        elif unit.startswith('q'):
+            # TODO This section is not working
+            q1 = datetime(new_date.year, 1, 1)
+            q2 = datetime(new_date.year, 4, 1)
+            q3 = datetime(new_date.year, 7, 1)
+            q4 = datetime(new_date.year, 10, 1)
+            if q1 <= new_date < q2:
+                if n == -1:
+                    new_date = datetime(new_date.year - 1, 10, 1)
+                else:
+                    new_date = q2
+            elif q2 <= new_date < q3:
+                pass
+            elif q3 <= new_date < q4:
+                pass
+            else:
+                pass
+            new_date += timedelta(days=91 * n)
+
+        else:
+            _unit = TIMEDELTA_UNITS.get(unit[0])
+            if _unit:
+                new_date += timedelta(**{_unit: n})
+            else:
+                raise TimestringInvalid('Unknown time unit: ' + unit)
+
+        return Date(new_date)
+
+    def plus(self, duration):
+        """
+        :return a new Date adjusted by the duration
+        :param duration: int or float number of seconds or string of number and
+         time unit. The number can begin with '-' to indicate subtraction
+        """
         if self.date == 'infinity':
             return
-        new = copy(self)
-        if type(to) in (str, unicode):
-            to = to.lower()
-            res = TIMESTRING_RE.search(to)
+        if isinstance(duration, (str, unicode)):
+            duration = duration.lower().strip()
+            res = TIMESTRING_RE.search(duration)
             if res:
-                rgroup = res.groupdict()
-                if (rgroup.get('delta') or rgroup.get('delta_2')):
-                    i = int(text2num(rgroup.get('num', 'one'))) * (-1 if to.startswith('-') else 1)
-                    delta = (rgroup.get('delta') or rgroup.get('delta_2')).lower()
-                    if delta.startswith('y'):
-                        try:
-                            new.date = new.date.replace(year=(new.date.year + i))
-                        except ValueError:
-                            # day is out of range for month
-                            new.date = new.date + timedelta(days=(365 * i))
-                    elif delta.startswith('month'):
-                        if (new.date.month + i) > 12:
-                            month = (new.date.month + i) % 12
-                            year = math.floor((new.date.month + i)/12)
-                            new.date = new.date.replace(month=month, year=new.date.year+year)
-                        elif (new.date.month + i) < 1:
-                            month = (new.date.month+i) % 12   # current= jan (1), i = -3, month = (1-3)%12 = 10
-                            if month == 0:
-                                month = new.date.month
-                            year = int((-1*(new.date.month+i))/12) + 1    #1 is added to fix 0 case
-                            new.date = new.date.replace(month=month, year=(new.date.year - year))
-                        else:
-                            new.date = new.date.replace(month=(new.date.month + i))
-                    elif delta.startswith('q'):
-                        # NP
-                        pass
-                    elif delta.startswith('w'):
-                        new.date = new.date + timedelta(days=(7 * i))
-                    elif delta.startswith('s'):
-                        new.date = new.date + timedelta(seconds=i)
-                    else:
-                        new.date = new.date + timedelta(**{('days' if delta.startswith('d') else 'hours' if delta.startswith('h') else 'minutes' if delta.startswith('m') else 'seconds'): i})
-                    return new
-        else:
-            new.date = new.date + timedelta(seconds=int(to))
+                res = res.groupdict()
+            sign = -1 if duration.startswith('-') else 1
+            num = res.get('num')
+            unit = res.get('delta') or res.get('delta_2')
+            return self.plus_(num, unit, sign)
+        elif isinstance(duration, (float, int)):
+            new = copy(self)
+            new.date = new.date + timedelta(seconds=duration)
             return new
 
-        raise TimestringInvalid('Invalid addition request')
+        raise TimestringInvalid('Invalid type for adjust() duration')
 
     def __nonzero__(self):
         return True
@@ -428,16 +424,16 @@ class Date(object):
     def __add__(self, to):
         if self.date == 'infinity':
             return copy(self)
-        return copy(self).adjust(to)
+        return self.plus(to)
 
     def __sub__(self, to):
         if self.date == 'infinity':
             return copy(self)
-        if type(to) in (str, unicode):
-            to = to[1:] if to.startswith('-') else ('-'+to)
+        if isinstance(to, (str, unicode)):
+            to = to[1:] if to.startswith('-') else ('-' + to)
         elif type(to) in (int, float, long):
-            to = to * -1
-        return copy(self).adjust(to)
+            to *= -1
+        return self.plus(to)
 
     def __format__(self, _):
         if self.date != 'infinity':
