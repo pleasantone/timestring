@@ -16,6 +16,12 @@ except NameError:
     unicode = str
     long = int
 
+POSTGRES_DATE_PATTERN = r'\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(\.\d+)?(\+|\-)\d{2}'
+pg_pat_ext = r'((\"' + POSTGRES_DATE_PATTERN + '\")|infinity)'
+POSTGRES_RANGE_RE = re.compile(
+    r'(\[|\()' + pg_pat_ext + r',' + pg_pat_ext + r'(\]|\))'
+)
+
 
 class Range(object):
     def __init__(self, start: Union[int, str, long, float, datetime, Date],
@@ -53,18 +59,15 @@ class Range(object):
         elif re.search(r'(\s(and|to)\s)', start):
             # Both sides are provided in string "start"
             start = re.sub('^(between|from)\s', '', start.lower())
-            # Both arguments found in start variable
             r = tuple(re.split(r'(\s(and|to)\s)', start.strip()))
-            start = Range(r[0], tz=tz).start
-            self._dates = (start, Range(r[-1], tz=tz).start)
+            self._dates = Date(r[0], tz=tz), Date(r[-1], tz=tz)
 
-        elif re.match(r"(\[|\()((\"\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(\.\d+)?(\+|\-)\d{2}\")|infinity),((\"\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(\.\d+)?(\+|\-)\d{2}\")|infinity)(\]|\))", start):
+        elif POSTGRES_RANGE_RE.match(start):
             # Postgresql tsrange and tstzranges support
-            start, end = tuple(re.sub('[^\w\s\-\:\.\+\,]', '', start).split(','))
-            self._dates = (Date(start), Date(end))
+            start, end = re.sub('[^\w\s\-\:\.\+\,]', '', start).split(',')
+            self._dates = Date(start), Date(end)
 
         else:
-
             now = datetime.now(tz)
 
             if re.search(r"(\+|\-)\d{2}$", start):
