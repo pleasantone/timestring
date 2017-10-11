@@ -52,7 +52,7 @@ class T(unittest.TestCase):
             '2012/9/5',
             '2012-09-5T',
             '9/5/2012',
-            '5th of September, 2012'
+            '5th of September, 2012',
         ]:
             self.assert_range(date_str,
                               datetime(2012, 9, 5),

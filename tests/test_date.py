@@ -35,7 +35,7 @@ class T(unittest.TestCase):
             '9/5/2012',
             '5th September, 2012',
             '09/05/2012',
-            # TODO: 5th of September, 2012
+            '5th of September, 2012',
         ]:
             self.assert_date(date_str, datetime(2012, 9, 5))
 
@@ -65,7 +65,9 @@ class T(unittest.TestCase):
             '7:35 pm on sept 5 2012'
             '2012-09-05T19:35:00'
             'September 5th, 2012 7:35 PM'
-            'September 5, 2012 7:35 pm'
+            'September 5, 2012 7:35 pm',
+            'September 5th, 2012 at 7:35pm'
+            '5th of September, 2012 at 7:35pm'
             '9-5-12 7:35 pm'
             "sep 5th '12 at 7:35:00 am"
         ]:

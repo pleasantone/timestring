@@ -37,7 +37,7 @@ TIMESTRING_RE = re.compile(re.sub('[\t\n\s]', '', re.sub('(\(\?\#[^\)]+\))', '',
                         )
                         (\s+((?P<ago>ago)|(?P<from_now>from\s+now))\b)?
                         |
-                        (?# =-=-=-= Matches Y-M-D, M-D-Y, D-M-Y, Y-D-M ex. "january 5, 2012", "january 5th, '12", "jan 5th 2012", "5 December, 2016" =-=-=-= )
+                        (?# =-=-=-= Matches dates with month name =-=-=-= )
                         (?P<date_5>
                             ((?P<year_6>(([12][089]\d{2})|('\d{2})))?([\/\-\s]+)?)
                             (
