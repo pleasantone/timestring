@@ -1,8 +1,10 @@
 import re
 import time
-import pytz
 from copy import copy
 from datetime import datetime, timedelta
+from typing import Union
+
+import pytz
 
 from timestring import TimestringInvalid, Context
 from .timestring_re import TIMESTRING_RE
@@ -54,7 +56,7 @@ TIMEDELTA_UNITS = dict(
 
 
 class Date(object):
-    def __init__(self, date=None, offset=None, tz=None,
+    def __init__(self, date=None, offset: dict = None, tz: str = None,
                  verbose=False, context=None):
         self._original = date
         if tz:
@@ -245,7 +247,7 @@ class Date(object):
             return self.date.year
 
     @year.setter
-    def year(self, year):
+    def year(self, year: int):
         self.date = self.date.replace(year=year)
 
     @property
@@ -254,7 +256,7 @@ class Date(object):
             return self.date.month
 
     @month.setter
-    def month(self, month):
+    def month(self, month: int):
         self.date = self.date.replace(month=month)
 
     @property
@@ -263,7 +265,7 @@ class Date(object):
             return self.date.day
 
     @day.setter
-    def day(self, day):
+    def day(self, day: int):
         self.date = self.date.replace(day=day)
 
     @property
@@ -272,7 +274,7 @@ class Date(object):
             return self.date.hour
 
     @hour.setter
-    def hour(self, hour):
+    def hour(self, hour: int):
         self.date = self.date.replace(hour=hour)
 
     @property
@@ -281,7 +283,7 @@ class Date(object):
             return self.date.minute
 
     @minute.setter
-    def minute(self, minute):
+    def minute(self, minute: int):
         self.date = self.date.replace(minute=minute)
 
     @property
@@ -290,7 +292,7 @@ class Date(object):
             return self.date.second
 
     @second.setter
-    def second(self, second):
+    def second(self, second: int):
         self.date = self.date.replace(second=second)
 
     @property
@@ -299,7 +301,7 @@ class Date(object):
             return self.date.microsecond
 
     @microsecond.setter
-    def microsecond(self, microsecond):
+    def microsecond(self, microsecond: int):
         self.date = self.date.replace(microsecond=microsecond)
 
     @property
@@ -318,7 +320,7 @@ class Date(object):
             return self.date.tzinfo
 
     @tz.setter
-    def tz(self, tz):
+    def tz(self, tz: str):
         if self.date != 'infinity':
             if tz is None:
                 self.date = self.date.replace(tzinfo=None)
@@ -332,7 +334,7 @@ class Date(object):
         else:
             return Date('infinity')
 
-    def plus_(self, num, unit: str, sign: int = 1):
+    def plus_(self, num: Union[str, int, float], unit: str, sign: int = 1):
         assert sign in [-1, 1]
         mag = get_num(num)
         n = sign * mag
@@ -386,7 +388,7 @@ class Date(object):
 
         return Date(new_date)
 
-    def plus(self, duration):
+    def plus(self, duration: Union[str, int, float, timedelta]):
         """
         :return a new Date adjusted by the duration
         :param duration: int or float number of seconds or string of number and
@@ -394,6 +396,8 @@ class Date(object):
         """
         if self.date == 'infinity':
             return
+        if isinstance(duration, timedelta):
+            return Date(self.date + duration)
         if isinstance(duration, (str, unicode)):
             duration = duration.lower().strip()
             res = TIMESTRING_RE.search(duration)
@@ -414,7 +418,7 @@ class Date(object):
     def __nonzero__(self):
         return True
 
-    def __add__(self, duration):
+    def __add__(self, duration: Union[str, int, float, timedelta]):
         if self.date == 'infinity':
             return copy(self)
         return self.plus(duration)

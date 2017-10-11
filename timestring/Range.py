@@ -1,13 +1,14 @@
 import re
-import pytz
 from copy import copy
 from datetime import datetime, timedelta
+from typing import Union
 
-from timestring.Date import Date
+import pytz
+
 from timestring import TimestringInvalid, Context
-from timestring.timestring_re import TIMESTRING_RE
+from .Date import Date
+from .timestring_re import TIMESTRING_RE
 from .utils import get_num
-
 
 try:
     unicode
@@ -17,8 +18,10 @@ except NameError:
 
 
 class Range(object):
-    def __init__(self, start, end=None, offset=None, week_start=1, tz=None,
-                 verbose=False, context=None):
+    def __init__(self, start: Union[int, str, long, float, datetime, Date],
+                 end: Union[datetime, Date] = None, offset: dict = None,
+                 week_start: int = 1, tz: str = None,
+                 verbose=False, context: Context = None):
         """`start` can be type <class timestring.Date> or <type str>
         """
         self._dates = []
@@ -288,7 +291,7 @@ class Range(object):
     def __repr__(self):
         return "<timestring.Range %s %s>" % (str(self), id(self))
 
-    def __getitem__(self, index):
+    def __getitem__(self, index: int):
         return self._dates[index]
 
     def __str__(self):
@@ -360,7 +363,7 @@ class Range(object):
             return self.end.tz
 
     @tz.setter
-    def tz(self, tz):
+    def tz(self, tz: datetime.tzinfo):
         self.start.tz = tz
         self.end.tz = tz
 
@@ -451,17 +454,7 @@ class Range(object):
         else:
             return self.__contains__(Range(other, tz=self.start.tz))
 
-    def cut(self, by, from_start=True):
-        """Shorten this range by the range requested and return the new range
-        """
-        s, e = copy(self.start), copy(self.end)
-        if from_start:
-            e = s + by
-        else:
-            s = e - by
-        return Range(s, e)
-
-    def plus(self, duration):
+    def plus(self, duration: Union[str, int, float]):
         # return a new instane, like datetime does
         return Range(self.start.plus(duration),
                      self.end.plus(duration),
@@ -481,10 +474,10 @@ class Range(object):
         return Range(self.start - self.elapse,
                      copy(self.start), tz=self.start.tz)
 
-    def __add__(self, duration):
+    def __add__(self, duration: Union[str, int, float]):
         return self.plus(duration)
 
-    def __sub__(self, duration):
+    def __sub__(self, duration: Union[str, int, float]):
         if type(duration) in (str, unicode):
             if duration.startswith('-'):
                 duration = duration[1:]
@@ -493,3 +486,13 @@ class Range(object):
         elif type(duration) in (int, long, float):
             duration *= -1
         return self.plus(duration)
+
+    def cut(self, by: Union[str, int, float], from_start=False):
+        """Shorten this range by the range requested and return the new range
+        """
+        s, e = self
+        if from_start:
+            s += by
+        else:
+            e -= by
+        return Range(s, e)

@@ -269,13 +269,18 @@ class T(unittest.TestCase):
         self.assertTrue(Range('yesterday') < Range('now'))
 
     def test_cut(self):
-        range_1 = Range('from january 10th 2010 to february 2nd 2010').cut('10 days')
-        range_1.start.microsecond = 1
-        range_1.end.microsecond = 1
-        range_2 = Range('from january 10th 2010 to jan 20th 2010')
-        range_2.start.microsecond = 1
-        range_2.end.microsecond = 1
-        self.assertEqual(range_1, range_2)
+        r = Range('from january 10th 2010 to february 2nd 2010')
+        r1 = r.cut(0)
+        self.assertEqual(r1.start, r.start)
+        self.assertEqual(r1.end, r.end)
+
+        r1 = r.cut('10 days')
+        self.assertEqual(r1.start, r.start)
+        self.assertEqual(r1.end, r.end - timedelta(days=10), r1.end)
+
+        r1 = r.cut('10 days', from_start=True)
+        self.assertEqual(r1.start, r.start + timedelta(days=10))
+        self.assertEqual(r1.end, r.end)
 
     def test_infinity(self):
         infinity = Date('infinity')
