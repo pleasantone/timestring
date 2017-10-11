@@ -132,7 +132,6 @@ class Range(object):
                             print('next and (num or article)')
                         end = start.plus_(num, delta)
 
-
                     # "next week"                       (  x  )[      ]
                     elif group['next'] or (not group['this'] and context == Context.NEXT):
                         if verbose:
@@ -143,7 +142,7 @@ class Range(object):
                                      week_start=week_start)
                         if delta.startswith('weekend'):
                             if 'now' in this:
-                                start, end = this.start.plus_(num, delta)
+                                start, end = this.plus_(num, delta)
                             else:
                                 start, end = this
                         else:
@@ -190,7 +189,7 @@ class Range(object):
 
                         # weekend
                         elif delta.startswith('weekend'):
-                            days = (WEEKEND_START_DAY - start.weekday + 7) % 7
+                            days = (WEEKEND_START_DAY - start.isoweekday + 7) % 7
                             start = Date(now + timedelta(days=days))
                             start = start.replace(hour=WEEKEND_START_HOUR,
                                                   minute=0,
@@ -481,25 +480,24 @@ class Range(object):
         else:
             return self.__contains__(Range(other, tz=self.start.tz))
 
+    def plus_(self, num, unit: str, sign: int = 1):
+        return Range(self.start.plus_(num, unit, sign),
+                     self.end.plus_(num, unit, sign))
+
     def plus(self, duration: Union[str, int, float]):
-        # return a new instane, like datetime does
+        """ :return: a new instance, like datetime does"""
         return Range(self.start.plus(duration),
                      self.end.plus(duration),
                      tz=self.start.tz)
-
-    def next(self, times=1):
-        """Returns a new instance of self
-        times is not supported yet.
-        """
-        return Range(copy(self.end),
-                     self.end + self.elapse, tz=self.start.tz)
-
     def prev(self, times=1):
-        """Returns a new instance of self
-        times is not supported yet.
-        """
+        """:return: a new instance of self times is not supported yet."""
         return Range(self.start - self.elapse,
                      copy(self.start), tz=self.start.tz)
+
+    def next(self, times=1):
+        """:return: a new instance of self times is not supported yet."""
+        return Range(copy(self.end),
+                     self.end + self.elapse, tz=self.start.tz)
 
     def __add__(self, duration: Union[str, int, float]):
         return self.plus(duration)
@@ -515,8 +513,7 @@ class Range(object):
         return self.plus(duration)
 
     def cut(self, by: Union[str, int, float], from_start=False):
-        """Shorten this range by the range requested and return the new range
-        """
+        """:return: A copy of this Range shortened by the given duration"""
         s, e = self
         if from_start:
             s += by
