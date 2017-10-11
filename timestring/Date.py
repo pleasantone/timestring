@@ -4,10 +4,9 @@ import pytz
 from copy import copy
 from datetime import datetime, timedelta
 
-from timestring.text2num import text2num
 from timestring import TimestringInvalid, Context
-from timestring.timestring_re import TIMESTRING_RE
-from timestring.utils import get_timezone_time
+from .timestring_re import TIMESTRING_RE
+from .utils import get_num
 
 try:
     unicode
@@ -185,7 +184,7 @@ class Date(object):
                 daytime = date.get('daytime')
                 if daytime:
                     if daytime.find('this time') >= 1:
-                        current_time = get_timezone_time(tz)
+                        current_time = datetime.now(tz)
                         new_date = new_date.replace(hour= current_time.hour,
                                                     minute=current_time.minute,
                                                     second=current_time.second)
@@ -335,14 +334,7 @@ class Date(object):
 
     def plus_(self, num, unit: str, sign: int = 1):
         assert sign in [-1, 1]
-        if 'couple' in (num or ''):
-            mag = 2
-        else:
-            try:
-                mag = float(num or 1)
-            except ValueError:
-                mag = int(text2num(num or 'one'))
-
+        mag = get_num(num)
         n = sign * mag
         whole = int(n)
         fraction = n - whole
@@ -416,24 +408,27 @@ class Date(object):
             new.date = new.date + timedelta(seconds=duration)
             return new
 
-        raise TimestringInvalid('Invalid type for adjust() duration')
+        raise TimestringInvalid('Invalid type for plus(): %s'
+                                % (type(duration)))
 
     def __nonzero__(self):
         return True
 
-    def __add__(self, to):
+    def __add__(self, duration):
         if self.date == 'infinity':
             return copy(self)
-        return self.plus(to)
+        return self.plus(duration)
 
-    def __sub__(self, to):
+    def __sub__(self, other):
+        if isinstance(other, timedelta):
+            return Date(self.date - other)
         if self.date == 'infinity':
             return copy(self)
-        if isinstance(to, (str, unicode)):
-            to = to[1:] if to.startswith('-') else ('-' + to)
-        elif type(to) in (int, float, long):
-            to *= -1
-        return self.plus(to)
+        if isinstance(other, (str, unicode)):
+            other = other[1:] if other.startswith('-') else ('-' + other)
+        elif type(other) in (int, float, long):
+            other *= -1
+        return self.plus(other)
 
     def __format__(self, _):
         if self.date != 'infinity':

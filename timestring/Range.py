@@ -6,6 +6,7 @@ from datetime import datetime, timedelta
 from timestring.Date import Date
 from timestring import TimestringInvalid, Context
 from timestring.timestring_re import TIMESTRING_RE
+from .utils import get_num
 
 
 try:
@@ -96,17 +97,23 @@ class Range(object):
                     # from now                         x(     )[     ]
                     # in                               x(     )[     ]
                     if group['ago'] or group['from_now'] or group['in']:
+                        n = get_num(num or 1)
+                        whole = int(n)
+                        fraction = n - whole
                         if verbose:
                             print('ago or from_now or in')
                         start = Date(res.string)
                         if not re.match('(hour|minute|second)s?', delta):
-                            start = start.replace(hour=0, minute=0, second=0)
-                            end = start + '1 day'
+                            if not fraction:
+                                start = start.replace(hour=0, minute=0, second=0, microsecond=0)
+                            end = start.plus_(1, 'day')
                         elif delta.startswith('hour'):
-                            start = start.replace(minute=0, second=0)
+                            if not fraction:
+                                start = start.replace(minute=0, second=0, microsecond=0)
                             end = start + '1 hour'
                         elif delta.startswith('minute'):
-                            start = start.replace(second=0)
+                            if not fraction:
+                                start = start.replace(second=0, microsecond=0)
                             end = start + '1 minute'
                         else:
                             end = start + '1 second'
@@ -454,10 +461,11 @@ class Range(object):
             s = e - by
         return Range(s, e)
 
-    def adjust(self, to):
+    def plus(self, duration):
         # return a new instane, like datetime does
-        return Range(self.start.plus(to),
-                     self.end.plus(to), tz=self.start.tz)
+        return Range(self.start.plus(duration),
+                     self.end.plus(duration),
+                     tz=self.start.tz)
 
     def next(self, times=1):
         """Returns a new instance of self
@@ -473,12 +481,15 @@ class Range(object):
         return Range(self.start - self.elapse,
                      copy(self.start), tz=self.start.tz)
 
-    def __add__(self, to):
-        return self.adjust(to)
+    def __add__(self, duration):
+        return self.plus(duration)
 
-    def __sub__(self, to):
-        if type(to) in (str, unicode):
-            to = to[1:] if to.startswith('-') else ('-'+to)
-        elif type(to) in (int, long, float):
-            to = to * -1
-        return self.adjust(to)
+    def __sub__(self, duration):
+        if type(duration) in (str, unicode):
+            if duration.startswith('-'):
+                duration = duration[1:]
+            else:
+                duration = '-' + duration
+        elif type(duration) in (int, long, float):
+            duration *= -1
+        return self.plus(duration)
