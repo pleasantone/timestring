@@ -1,4 +1,8 @@
 import re
+
+MONTH_NAMES = r'''\b(january|february|march|april|june|july|august|september|october|november|december''' \
+              r'''|jan|feb|mar|apr|may|jun|jul|aug|sept?|oct|nov|dec)\b'''
+
 TIMESTRING_RE = re.compile(re.sub('[\t\n\s]', '', re.sub('(\(\?\#[^\)]+\))', '', r'''
     (
         ((?P<prefix>between|from|before|after|\>=?|\<=?|greater\s+th(a|e)n(\s+a)?|less\s+th(a|e)n(\s+a)?)\s+)?
@@ -38,11 +42,12 @@ TIMESTRING_RE = re.compile(re.sub('[\t\n\s]', '', re.sub('(\(\?\#[^\)]+\))', '',
                             ((?P<year_6>(([12][089]\d{2})|('\d{2})))?([\/\-\s]+)?)
                             (
                                 ((?P<date_4>(\d{1,2})(?!\d))(th|nd|st|rd)?([\/\-\s]+)?)
-                                (?P<month_5>\b(january|february|march|april|june|july|august|september|october|november|december|jan|feb|mar|apr|may|jun|jul|aug|sept?|oct|nov|dec)\b)[\/\-\s]?
+                                (\s+of\s+)?
+                                (?P<month_5>''' + MONTH_NAMES + r''')[\/\-\s]?
                             )
                             |
                             (
-                                (?P<month>\b(january|february|march|april|june|july|august|september|october|november|december|jan|feb|mar|apr|may|jun|jul|aug|sept?|oct|nov|dec)\b)[\/\-\s]?
+                                (?P<month>''' + MONTH_NAMES + r''')[\/\-\s]?
                                 ((?P<date>(\d{1,2})(?!\d))(th|nd|st|rd)?)
                             )
                             (,?\s(?P<year>([12][089]|')?\d{2}))?
@@ -76,7 +81,7 @@ TIMESTRING_RE = re.compile(re.sub('[\t\n\s]', '', re.sub('(\(\?\#[^\)]+\))', '',
 
                         |
 
-                        (?P<month_1>\b(january|february|march|april|june|july|august|september|october|november|december|jan|feb|mar|apr|may|jun|jul|aug|sept?|oct|nov|dec)\b)
+                        (?P<month_1>''' + MONTH_NAMES + ''')
                     )
                 )
                 (?# =-=-=-= Conjunctions =-=-=-= )
