@@ -40,6 +40,8 @@ class T(unittest.TestCase):
             + '\nExpected end: %s += %s' % (expected_end, end_tolerance)
             + '\n  Actual end: %s' % end
         )
+        if start_tolerance and end_tolerance:
+            self.assertEqual(expected_end - expected_start, end.date - start.date)
 
     def test_date_formats(self):
         for date_str in [
@@ -267,13 +269,18 @@ class T(unittest.TestCase):
         self.assertTrue(Range('yesterday') < Range('now'))
 
     def test_cut(self):
-        range_1 = Range('from january 10th 2010 to february 2nd 2010').cut('10 days')
-        range_1.start.microsecond = 1
-        range_1.end.microsecond = 1
-        range_2 = Range('from january 10th 2010 to jan 20th 2010')
-        range_2.start.microsecond = 1
-        range_2.end.microsecond = 1
-        self.assertEqual(range_1, range_2)
+        r = Range('from january 10th 2010 to february 2nd 2010')
+        r1 = r.cut(0)
+        self.assertEqual(r1.start, r.start)
+        self.assertEqual(r1.end, r.end)
+
+        r1 = r.cut('10 days')
+        self.assertEqual(r1.start, r.start)
+        self.assertEqual(r1.end, r.end - timedelta(days=10), r1.end)
+
+        r1 = r.cut('10 days', from_start=True)
+        self.assertEqual(r1.start, r.start + timedelta(days=10))
+        self.assertEqual(r1.end, r.end)
 
     def test_infinity(self):
         infinity = Date('infinity')
@@ -1103,62 +1110,88 @@ class T(unittest.TestCase):
                           datetime(2017, 4, 2),
                           start_tolerance=_3days,
                           end_tolerance=_3days)
-        #
-        # self.assert_range('2.5 weeks ago',
-        #                   datetime(2017, 6, 2),
-        #                   datetime(2017, 6, 3))
-        #
-        # self.assert_range('2.5 days ago',
-        #                   datetime(2017, 6, 14),
-        #                   datetime(2017, 6, 15))
-        #
-        # self.assert_range('2.5 hours ago',
-        #                   datetime(2017, 6, 16, 17),
-        #                   datetime(2017, 6, 16, 18))
-        #
-        # self.assert_range('2.5 minutes ago',
-        #                   datetime(2017, 6, 16, 19, 35),
-        #                   datetime(2017, 6, 16, 19, 36))
-        #
-        # self.assert_range('2.5 seconds ago',
-        #                   datetime(2017, 6, 16, 19, 37, 20),
-        #                   datetime(2017, 6, 16, 19, 37, 21))
-        #
-        # self.assert_range('in 2.5 years',
-        #                   datetime(2019, 6, 16),
-        #                   datetime(2019, 6, 17))
-        #
-        # self.assert_range('in 2.5 months',
-        #                   datetime(2017, 8, 16),
-        #                   datetime(2017, 8, 17))
-        #
-        # self.assert_range('in 2.5 weeks',
-        #                   datetime(2017, 6, 30),
-        #                   datetime(2017, 7, 1))
-        #
-        # self.assert_range('in 2.5 days',
-        #                   datetime(2017, 6, 18),
-        #                   datetime(2017, 6, 19))
-        #
-        # self.assert_range('in 2.5 hours',
-        #                   datetime(2017, 6, 16, 21),
-        #                   datetime(2017, 6, 16, 22))
-        #
-        # self.assert_range('in 2.5 minutes',
-        #                   datetime(2017, 6, 16, 19, 39),
-        #                   datetime(2017, 6, 16, 19, 40))
-        #
-        # self.assert_range('in 2.5 seconds',
-        #                   datetime(2017, 6, 16, 19, 37, 24),
-        #                   datetime(2017, 6, 16, 19, 37, 25))
-        #
-        # self.assert_range('since 2.5 years ago', datetime(2015, 6, 16), now)
-        # self.assert_range('since 2.5 months ago', datetime(2017, 4, 16), now)
-        # self.assert_range('since 2.5 weeks ago', datetime(2017, 6, 2), now)
-        # self.assert_range('since 2.5 days ago', datetime(2017, 6, 14), now)
-        # self.assert_range('since 2.5 hours ago', datetime(2017, 6, 16, 17), now)
-        # self.assert_range('since 2.5 minutes ago', datetime(2017, 6, 16, 19, 35), now)
-        # self.assert_range('since 2.5 seconds ago', datetime(2017, 6, 16, 19, 37, 20), now)
+
+        self.assert_range('2.5 weeks ago',
+                          datetime(2017, 5, 30, 7, 37, 22),
+                          datetime(2017, 5, 31, 7, 37, 22))
+
+        self.assert_range('2.5 days ago',
+                          datetime(2017, 6, 14, 7, 37, 22),
+                          datetime(2017, 6, 15, 7, 37, 22))
+
+        self.assert_range('2.5 hours ago',
+                          datetime(2017, 6, 16, 17, 7, 22),
+                          datetime(2017, 6, 16, 18, 7, 22))
+
+        self.assert_range('2.5 minutes ago',
+                          datetime(2017, 6, 16, 19, 34, 52),
+                          datetime(2017, 6, 16, 19, 35, 52))
+
+        self.assert_range('2.5 seconds ago',
+                          datetime(2017, 6, 16, 19, 37, 19, 500000),
+                          datetime(2017, 6, 16, 19, 37, 20, 500000))
+
+        self.assert_range('in 2.5 years',
+                          datetime(2019, 12, 16),
+                          datetime(2019, 12, 17),
+                          start_tolerance=_3days,
+                          end_tolerance=_3days)
+
+        self.assert_range('in 2.5 months',
+                          datetime(2017, 9, 1),
+                          datetime(2017, 9, 2),
+                          start_tolerance=_3days,
+                          end_tolerance=_3days)
+
+        self.assert_range('in 2.5 weeks',
+                          datetime(2017, 7, 4, 7, 37, 22),
+                          datetime(2017, 7, 5, 7, 37, 22))
+
+        self.assert_range('in 2.5 days',
+                          datetime(2017, 6, 19, 7, 37, 22),
+                          datetime(2017, 6, 20, 7, 37, 22))
+
+        self.assert_range('in 2.5 hours',
+                          datetime(2017, 6, 16, 22, 7, 22),
+                          datetime(2017, 6, 16, 23, 7, 22))
+
+        self.assert_range('in 2.5 minutes',
+                          datetime(2017, 6, 16, 19, 39, 52),
+                          datetime(2017, 6, 16, 19, 40, 52))
+
+        self.assert_range('in 2.5 seconds',
+                          datetime(2017, 6, 16, 19, 37, 24, 500000),
+                          datetime(2017, 6, 16, 19, 37, 25, 500000))
+
+        self.assert_range('since 2.5 years ago',
+                          datetime(2014, 12, 16),
+                          now,
+                          start_tolerance=_3days)
+
+        self.assert_range('since 2.5 months ago',
+                          datetime(2017, 4, 1),
+                          now,
+                          start_tolerance=_3days)
+
+        self.assert_range('since 2.5 weeks ago',
+                          datetime(2017, 5, 30, 7, 37, 22),
+                          now)
+
+        self.assert_range('since 2.5 days ago',
+                          datetime(2017, 6, 14, 7, 37, 22),
+                          now)
+
+        self.assert_range('since 2.5 hours ago',
+                          datetime(2017, 6, 16, 17, 7, 22),
+                          now)
+
+        self.assert_range('since 2.5 minutes ago',
+                          datetime(2017, 6, 16, 19, 34, 52),
+                          now)
+
+        self.assert_range('since 2.5 seconds ago',
+                          datetime(2017, 6, 16, 19, 37, 19, 500000),
+                          now)
 
 
 def main():

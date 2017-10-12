@@ -1,1 +1,2 @@
 pytz>=2017.2
+word2number

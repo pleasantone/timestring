@@ -1,12 +1,14 @@
 import re
-import pytz
 from copy import copy
 from datetime import datetime, timedelta
+from typing import Union
 
-from timestring.Date import Date
+import pytz
+
 from timestring import TimestringInvalid, Context
-from timestring.timestring_re import TIMESTRING_RE
-
+from .Date import Date
+from .timestring_re import TIMESTRING_RE
+from .utils import get_num
 
 try:
     unicode
@@ -14,10 +16,18 @@ except NameError:
     unicode = str
     long = int
 
+POSTGRES_DATE_PATTERN = r'\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(\.\d+)?(\+|\-)\d{2}'
+pg_pat_ext = r'((\"' + POSTGRES_DATE_PATTERN + '\")|infinity)'
+POSTGRES_RANGE_RE = re.compile(
+    r'(\[|\()' + pg_pat_ext + r',' + pg_pat_ext + r'(\]|\))'
+)
+
 
 class Range(object):
-    def __init__(self, start, end=None, offset=None, week_start=1, tz=None,
-                 verbose=False, context=None):
+    def __init__(self, start: Union[int, str, long, float, datetime, Date],
+                 end: Union[datetime, Date] = None, offset: dict = None,
+                 week_start: int = 1, tz: str = None,
+                 verbose=False, context: Context = None):
         """`start` can be type <class timestring.Date> or <type str>
         """
         self._dates = []
@@ -49,18 +59,15 @@ class Range(object):
         elif re.search(r'(\s(and|to)\s)', start):
             # Both sides are provided in string "start"
             start = re.sub('^(between|from)\s', '', start.lower())
-            # Both arguments found in start variable
             r = tuple(re.split(r'(\s(and|to)\s)', start.strip()))
-            start = Range(r[0], tz=tz).start
-            self._dates = (start, Range(r[-1], tz=tz).start)
+            self._dates = Date(r[0], tz=tz), Date(r[-1], tz=tz)
 
-        elif re.match(r"(\[|\()((\"\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(\.\d+)?(\+|\-)\d{2}\")|infinity),((\"\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(\.\d+)?(\+|\-)\d{2}\")|infinity)(\]|\))", start):
+        elif POSTGRES_RANGE_RE.match(start):
             # Postgresql tsrange and tstzranges support
-            start, end = tuple(re.sub('[^\w\s\-\:\.\+\,]', '', start).split(','))
-            self._dates = (Date(start), Date(end))
+            start, end = re.sub('[^\w\s\-\:\.\+\,]', '', start).split(',')
+            self._dates = Date(start), Date(end)
 
         else:
-
             now = datetime.now(tz)
 
             if re.search(r"(\+|\-)\d{2}$", start):
@@ -96,17 +103,23 @@ class Range(object):
                     # from now                         x(     )[     ]
                     # in                               x(     )[     ]
                     if group['ago'] or group['from_now'] or group['in']:
+                        n = get_num(num or 1)
+                        whole = int(n)
+                        fraction = n - whole
                         if verbose:
                             print('ago or from_now or in')
                         start = Date(res.string)
                         if not re.match('(hour|minute|second)s?', delta):
-                            start = start.replace(hour=0, minute=0, second=0)
-                            end = start + '1 day'
+                            if not fraction:
+                                start = start.replace(hour=0, minute=0, second=0, microsecond=0)
+                            end = start.plus_(1, 'day')
                         elif delta.startswith('hour'):
-                            start = start.replace(minute=0, second=0)
+                            if not fraction:
+                                start = start.replace(minute=0, second=0, microsecond=0)
                             end = start + '1 hour'
                         elif delta.startswith('minute'):
-                            start = start.replace(second=0)
+                            if not fraction:
+                                start = start.replace(second=0, microsecond=0)
                             end = start + '1 minute'
                         else:
                             end = start + '1 second'
@@ -281,7 +294,7 @@ class Range(object):
     def __repr__(self):
         return "<timestring.Range %s %s>" % (str(self), id(self))
 
-    def __getitem__(self, index):
+    def __getitem__(self, index: int):
         return self._dates[index]
 
     def __str__(self):
@@ -353,7 +366,7 @@ class Range(object):
             return self.end.tz
 
     @tz.setter
-    def tz(self, tz):
+    def tz(self, tz: datetime.tzinfo):
         self.start.tz = tz
         self.end.tz = tz
 
@@ -444,20 +457,11 @@ class Range(object):
         else:
             return self.__contains__(Range(other, tz=self.start.tz))
 
-    def cut(self, by, from_start=True):
-        """Shorten this range by the range requested and return the new range
-        """
-        s, e = copy(self.start), copy(self.end)
-        if from_start:
-            e = s + by
-        else:
-            s = e - by
-        return Range(s, e)
-
-    def adjust(self, to):
+    def plus(self, duration: Union[str, int, float]):
         # return a new instane, like datetime does
-        return Range(self.start.plus(to),
-                     self.end.plus(to), tz=self.start.tz)
+        return Range(self.start.plus(duration),
+                     self.end.plus(duration),
+                     tz=self.start.tz)
 
     def next(self, times=1):
         """Returns a new instance of self
@@ -473,12 +477,25 @@ class Range(object):
         return Range(self.start - self.elapse,
                      copy(self.start), tz=self.start.tz)
 
-    def __add__(self, to):
-        return self.adjust(to)
+    def __add__(self, duration: Union[str, int, float]):
+        return self.plus(duration)
 
-    def __sub__(self, to):
-        if type(to) in (str, unicode):
-            to = to[1:] if to.startswith('-') else ('-'+to)
-        elif type(to) in (int, long, float):
-            to = to * -1
-        return self.adjust(to)
+    def __sub__(self, duration: Union[str, int, float]):
+        if type(duration) in (str, unicode):
+            if duration.startswith('-'):
+                duration = duration[1:]
+            else:
+                duration = '-' + duration
+        elif type(duration) in (int, long, float):
+            duration *= -1
+        return self.plus(duration)
+
+    def cut(self, by: Union[str, int, float], from_start=False):
+        """Shorten this range by the range requested and return the new range
+        """
+        s, e = self
+        if from_start:
+            s += by
+        else:
+            e -= by
+        return Range(s, e)

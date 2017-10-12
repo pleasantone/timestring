@@ -1,13 +1,14 @@
 import re
 import time
-import pytz
 from copy import copy
 from datetime import datetime, timedelta
+from typing import Union
 
-from timestring.text2num import text2num
+import pytz
+
 from timestring import TimestringInvalid, Context
-from timestring.timestring_re import TIMESTRING_RE
-from timestring.utils import get_timezone_time
+from .timestring_re import TIMESTRING_RE
+from .utils import get_num
 
 try:
     unicode
@@ -55,7 +56,7 @@ TIMEDELTA_UNITS = dict(
 
 
 class Date(object):
-    def __init__(self, date=None, offset=None, tz=None,
+    def __init__(self, date=None, offset: dict = None, tz: str = None,
                  verbose=False, context=None):
         self._original = date
         if tz:
@@ -185,7 +186,7 @@ class Date(object):
                 daytime = date.get('daytime')
                 if daytime:
                     if daytime.find('this time') >= 1:
-                        current_time = get_timezone_time(tz)
+                        current_time = datetime.now(tz)
                         new_date = new_date.replace(hour= current_time.hour,
                                                     minute=current_time.minute,
                                                     second=current_time.second)
@@ -244,7 +245,7 @@ class Date(object):
             return self.date.year
 
     @year.setter
-    def year(self, year):
+    def year(self, year: int):
         self.date = self.date.replace(year=year)
 
     @property
@@ -253,7 +254,7 @@ class Date(object):
             return self.date.month
 
     @month.setter
-    def month(self, month):
+    def month(self, month: int):
         self.date = self.date.replace(month=month)
 
     @property
@@ -262,7 +263,7 @@ class Date(object):
             return self.date.day
 
     @day.setter
-    def day(self, day):
+    def day(self, day: int):
         self.date = self.date.replace(day=day)
 
     @property
@@ -271,7 +272,7 @@ class Date(object):
             return self.date.hour
 
     @hour.setter
-    def hour(self, hour):
+    def hour(self, hour: int):
         self.date = self.date.replace(hour=hour)
 
     @property
@@ -280,7 +281,7 @@ class Date(object):
             return self.date.minute
 
     @minute.setter
-    def minute(self, minute):
+    def minute(self, minute: int):
         self.date = self.date.replace(minute=minute)
 
     @property
@@ -289,7 +290,7 @@ class Date(object):
             return self.date.second
 
     @second.setter
-    def second(self, second):
+    def second(self, second: int):
         self.date = self.date.replace(second=second)
 
     @property
@@ -298,7 +299,7 @@ class Date(object):
             return self.date.microsecond
 
     @microsecond.setter
-    def microsecond(self, microsecond):
+    def microsecond(self, microsecond: int):
         self.date = self.date.replace(microsecond=microsecond)
 
     @property
@@ -317,7 +318,7 @@ class Date(object):
             return self.date.tzinfo
 
     @tz.setter
-    def tz(self, tz):
+    def tz(self, tz: str):
         if self.date != 'infinity':
             if tz is None:
                 self.date = self.date.replace(tzinfo=None)
@@ -331,16 +332,9 @@ class Date(object):
         else:
             return Date('infinity')
 
-    def plus_(self, num, unit: str, sign: int = 1):
+    def plus_(self, num: Union[str, int, float], unit: str, sign: int = 1):
         assert sign in [-1, 1]
-        if 'couple' in (num or ''):
-            mag = 2
-        else:
-            try:
-                mag = float(num or 1)
-            except ValueError:
-                mag = int(text2num(num or 'one'))
-
+        mag = get_num(num)
         n = sign * mag
         whole = int(n)
         fraction = n - whole
@@ -392,7 +386,7 @@ class Date(object):
 
         return Date(new_date)
 
-    def plus(self, duration):
+    def plus(self, duration: Union[str, int, float, timedelta]):
         """
         :return a new Date adjusted by the duration
         :param duration: int or float number of seconds or string of number and
@@ -400,6 +394,8 @@ class Date(object):
         """
         if self.date == 'infinity':
             return
+        if isinstance(duration, timedelta):
+            return Date(self.date + duration)
         if isinstance(duration, (str, unicode)):
             duration = duration.lower().strip()
             res = TIMESTRING_RE.search(duration)
@@ -414,24 +410,27 @@ class Date(object):
             new.date = new.date + timedelta(seconds=duration)
             return new
 
-        raise TimestringInvalid('Invalid type for adjust() duration')
+        raise TimestringInvalid('Invalid type for plus(): %s'
+                                % (type(duration)))
 
     def __nonzero__(self):
         return True
 
-    def __add__(self, to):
+    def __add__(self, duration: Union[str, int, float, timedelta]):
         if self.date == 'infinity':
             return copy(self)
-        return self.plus(to)
+        return self.plus(duration)
 
-    def __sub__(self, to):
+    def __sub__(self, other):
+        if isinstance(other, timedelta):
+            return Date(self.date - other)
         if self.date == 'infinity':
             return copy(self)
-        if isinstance(to, (str, unicode)):
-            to = to[1:] if to.startswith('-') else ('-' + to)
-        elif type(to) in (int, float, long):
-            to *= -1
-        return self.plus(to)
+        if isinstance(other, (str, unicode)):
+            other = other[1:] if other.startswith('-') else ('-' + other)
+        elif type(other) in (int, float, long):
+            other *= -1
+        return self.plus(other)
 
     def __format__(self, _):
         if self.date != 'infinity':
