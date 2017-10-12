@@ -210,12 +210,10 @@ class Date(object):
                     # No offset because the hour was set.
                     offset = False
 
-                    #minute
                     minute = [date.get(key) for key in ('minute', 'minute_2') if date.get(key)]
                     if minute:
                         new_date = new_date.replace(minute=int(max(minute)))
 
-                    #second
                     seconds = date.get('seconds', 0)
                     if seconds:
                         new_date = new_date.replace(second=int(seconds))
