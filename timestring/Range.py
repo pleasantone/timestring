@@ -60,7 +60,8 @@ class Range(object):
             # Both sides are provided in string "start"
             start = re.sub('^(between|from)\s', '', start.lower())
             r = tuple(re.split(r'(\s(and|to)\s)', start.strip()))
-            self._dates = Date(r[0], tz=tz), Date(r[-1], tz=tz)
+            start = Date(r[0], tz=tz)
+            self._dates = start, Date(r[-1], now=start.date)
 
         elif POSTGRES_RANGE_RE.match(start):
             # Postgresql tsrange and tstzranges support
@@ -239,7 +240,7 @@ class Range(object):
                 if group['time_2']:
                     if verbose:
                         print('time_2')
-                    temp = Date(res.string, offset=offset, tz=tz).date
+                    temp = Date(res.string, offset=offset, now=start, tz=tz).date
                     start = start.replace(hour=temp.hour,
                                           minute=temp.minute,
                                           second=temp.second)

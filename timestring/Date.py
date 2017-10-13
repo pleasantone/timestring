@@ -57,12 +57,15 @@ TIMEDELTA_UNITS = dict(
 
 class Date(object):
     def __init__(self, date=None, offset: dict = None, tz: str = None,
-                 verbose=False, context=None):
+                 now: datetime = None, verbose=False, context=None):
         self._original = date
         if tz:
             tz = pytz.timezone(str(tz))
         else:
             tz = None
+
+        if not now:
+            now = datetime.now(tz)
 
         if isinstance(date, Date):
             self.date = copy(date.date)
@@ -76,7 +79,7 @@ class Date(object):
             self.date = datetime.fromtimestamp(int(date))
 
         elif date == 'now' or date is None:
-            self.date = datetime.now(tz)
+            self.date = now
 
         elif date == 'infinity':
             self.date = 'infinity'
@@ -99,7 +102,6 @@ class Date(object):
 
                 date = dict((k, v if type(v) is str else v) for k, v in date.items() if v)
 
-            now = datetime.now(tz)
             new_date = copy(now)
 
             # TODO Refactor
@@ -185,12 +187,7 @@ class Date(object):
                 # !daytime
                 daytime = date.get('daytime')
                 if daytime:
-                    if daytime.find('this time') >= 1:
-                        current_time = datetime.now(tz)
-                        new_date = new_date.replace(hour= current_time.hour,
-                                                    minute=current_time.minute,
-                                                    second=current_time.second)
-                    else:
+                    if 'this time' not in daytime:
                         _hour = DAYTIMES.get(date.get('daytime'), 12)
                         new_date = new_date.replace(hour=_hour,
                                                     minute=0,
@@ -220,6 +217,9 @@ class Date(object):
                         new_date = new_date.replace(second=int(seconds))
 
                     new_date = new_date.replace(microsecond=0)
+
+                    if not day and not relative_day and new_date < now:
+                        new_date += timedelta(days=1)
 
                 if year != [] and not month and weekday is None and not day:
                     new_date = new_date.replace(month=1)
