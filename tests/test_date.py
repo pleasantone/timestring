@@ -47,7 +47,7 @@ class T(unittest.TestCase):
 
     def test_time_formats(self):
         for time_str in ['11am', '11 AM', '11a', "11 o'clock", '11 oclock',]:
-            self.assert_date(time_str, datetime(2017, 6, 16, 11, 0, 0))
+            self.assert_date(time_str, datetime(2017, 6, 17, 11, 0, 0))
             # TODO: at 11
             # TODO: eleven o'clock
             # TODO: 1100 hours

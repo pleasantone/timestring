@@ -156,8 +156,8 @@ class T(unittest.TestCase):
                           datetime(2018, 1, 12))
 
         self.assert_range('10am to 11pm',
-                          datetime(2017, 6, 16, 10),
-                          datetime(2017, 6, 16, 23))
+                          datetime(2017, 6, 17, 10),
+                          datetime(2017, 6, 17, 23))
 
         self.assert_range('10pm to 11am',
                           datetime(2017, 6, 16, 22),
@@ -201,6 +201,18 @@ class T(unittest.TestCase):
         self.assert_range('between january 15th at 3 am and august 5th 5pm',
                           datetime(2018, 1, 15, 3),
                           datetime(2018, 8, 5, 17))
+
+        self.assert_range('January to August',
+                          datetime(2018, 1, 1),
+                          datetime(2018, 8, 1))
+
+        self.assert_range('Thursday to Saturday',
+                          datetime(2017, 6, 22),
+                          datetime(2017, 6, 24))
+
+        self.assert_range('7pm to 8pm',
+                          datetime(2017, 6, 17, 19),
+                          datetime(2017, 6, 17, 20))
 
     def test_weekdays(self):
         day_seconds = 24 * 60 * 60
