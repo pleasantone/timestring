@@ -187,11 +187,7 @@ class Date(object):
                 # !daytime
                 daytime = date.get('daytime')
                 if daytime:
-                    if daytime.find('this time') >= 1:
-                        new_date = new_date.replace(hour= now.hour,
-                                                    minute=now.minute,
-                                                    second=now.second)
-                    else:
+                    if 'this time' not in daytime:
                         _hour = DAYTIMES.get(date.get('daytime'), 12)
                         new_date = new_date.replace(hour=_hour,
                                                     minute=0,
