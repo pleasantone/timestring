@@ -5,7 +5,8 @@ from typing import Union
 
 import pytz
 
-from timestring import TimestringInvalid, Context
+from timestring import TimestringInvalid, Context, \
+    WEEKEND_START_DAY, WEEKEND_START_HOUR, WEEKEND_END_DAY, WEEKEND_END_HOUR
 from .Date import Date
 from .timestring_re import TIMESTRING_RE
 from .utils import get_num
@@ -99,6 +100,7 @@ class Range(object):
                     delta = delta.lower().strip()
                     num = group['num']
                     start = Date("now", offset=offset, tz=tz)
+                    end = None
 
                     # ago                               [     ](     )x
                     # from now                         x(     )[     ]
@@ -131,7 +133,6 @@ class Range(object):
                             print('next and (num or article)')
                         end = start.plus_(num, delta)
 
-
                     # "next week"                       (  x  )[      ]
                     elif group['next'] or (not group['this'] and context == Context.NEXT):
                         if verbose:
@@ -140,8 +141,14 @@ class Range(object):
                                      offset=offset,
                                      tz=tz,
                                      week_start=week_start)
-                        start = this.end
-                        end = start.plus_(num, delta)
+                        if delta.startswith('weekend'):
+                            if 'now' in this:
+                                start, end = this.plus_(num, delta)
+                            else:
+                                start, end = this
+                        else:
+                            start = this.end
+                            end = start.plus_(num, delta)
 
                     # "last 2 weeks", "the last hour"   [     ][     ]x
                     elif group['prev'] and (group['num'] or group['article']):
@@ -181,6 +188,21 @@ class Range(object):
                         elif delta.startswith('mo'):
                             start = start.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
 
+                        # weekend
+                        elif delta.startswith('weekend'):
+                            days = (WEEKEND_START_DAY - start.isoweekday + 7) % 7
+                            start = Date(now + timedelta(days=days))
+                            start = start.replace(hour=WEEKEND_START_HOUR,
+                                                  minute=0,
+                                                  second=0,
+                                                  microsecond=0)
+                            days = (WEEKEND_END_DAY + 7 - WEEKEND_START_DAY) % 7
+                            end = Date(start.date + timedelta(days=days))
+                            end = end.replace(hour=WEEKEND_END_HOUR)
+                            start = start.replace(**offset or {})
+                            end = end.replace(**offset or {})
+
+                        # week
                         elif delta.startswith('w'):
                             start.date -= timedelta(days=start.isoweekday - week_start % 7)
                             start = start.replace(hour=0, minute=0, second=0, microsecond=0)
@@ -202,7 +224,8 @@ class Range(object):
 
                         if offset:
                             start = start.replace(**offset)
-                        end = start.plus_(num, delta)
+                        if not end:
+                            end = start.plus_(num, delta)
 
                 elif group['relative_day'] or group['weekday']:
                     if verbose:
@@ -458,25 +481,24 @@ class Range(object):
         else:
             return self.__contains__(Range(other, tz=self.start.tz))
 
+    def plus_(self, num, unit: str, sign: int = 1):
+        return Range(self.start.plus_(num, unit, sign),
+                     self.end.plus_(num, unit, sign))
+
     def plus(self, duration: Union[str, int, float]):
-        # return a new instane, like datetime does
+        """ :return: a new instance, like datetime does"""
         return Range(self.start.plus(duration),
                      self.end.plus(duration),
                      tz=self.start.tz)
-
-    def next(self, times=1):
-        """Returns a new instance of self
-        times is not supported yet.
-        """
-        return Range(copy(self.end),
-                     self.end + self.elapse, tz=self.start.tz)
-
     def prev(self, times=1):
-        """Returns a new instance of self
-        times is not supported yet.
-        """
+        """:return: a new instance of self times is not supported yet."""
         return Range(self.start - self.elapse,
                      copy(self.start), tz=self.start.tz)
+
+    def next(self, times=1):
+        """:return: a new instance of self times is not supported yet."""
+        return Range(copy(self.end),
+                     self.end + self.elapse, tz=self.start.tz)
 
     def __add__(self, duration: Union[str, int, float]):
         return self.plus(duration)
@@ -492,8 +514,7 @@ class Range(object):
         return self.plus(duration)
 
     def cut(self, by: Union[str, int, float], from_start=False):
-        """Shorten this range by the range requested and return the new range
-        """
+        """:return: A copy of this Range shortened by the given duration"""
         s, e = self
         if from_start:
             s += by
