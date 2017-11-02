@@ -79,7 +79,7 @@ class Date(object):
             self.date = datetime.fromtimestamp(int(date))
 
         elif date == 'now' or date is None:
-            self.date = now
+            self.date = datetime.now(tz)
 
         elif date == 'infinity':
             self.date = 'infinity'
