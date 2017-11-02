@@ -53,7 +53,7 @@ class Range(object):
         elif isinstance(start, (int, long, float)) \
                     or (isinstance(start, (str, unicode)) and start.isdigit()) \
                 and len(str(int(float(start)))) > 4:
-            start = Date(start)
+            start = Date(start, tz=tz)
             end = start + '1 second'
             self._dates = start, end
 
@@ -62,12 +62,12 @@ class Range(object):
             start = re.sub('^(between|from)\s', '', start.lower())
             r = tuple(re.split(r'(\s(and|to)\s)', start.strip()))
             start = Date(r[0], tz=tz)
-            self._dates = start, Date(r[-1], now=start.date)
+            self._dates = start, Date(r[-1], now=start.date, tz=tz)
 
         elif POSTGRES_RANGE_RE.match(start):
             # Postgresql tsrange and tstzranges support
             start, end = re.sub('[^\w\s\-\:\.\+\,]', '', start).split(',')
-            self._dates = Date(start), Date(end)
+            self._dates = Date(start, tz=tz), Date(end, tz=tz)
 
         else:
             now = datetime.now(tz)
@@ -111,7 +111,7 @@ class Range(object):
                         fraction = n - whole
                         if verbose:
                             print('ago or from_now or in')
-                        start = Date(res.string)
+                        start = Date(res.string, tz=tz)
                         if not re.match('(hour|minute|second)s?', delta):
                             if not fraction:
                                 start = start.replace(hour=0, minute=0, second=0, microsecond=0)
@@ -191,13 +191,13 @@ class Range(object):
                         # weekend
                         elif delta.startswith('weekend'):
                             days = (WEEKEND_START_DAY - start.isoweekday + 7) % 7
-                            start = Date(now + timedelta(days=days))
+                            start = Date(now + timedelta(days=days), tz=tz)
                             start = start.replace(hour=WEEKEND_START_HOUR,
                                                   minute=0,
                                                   second=0,
                                                   microsecond=0)
                             days = (WEEKEND_END_DAY + 7 - WEEKEND_START_DAY) % 7
-                            end = Date(start.date + timedelta(days=days))
+                            end = Date(start.date + timedelta(days=days), tz=tz)
                             end = end.replace(hour=WEEKEND_END_HOUR)
                             start = start.replace(**offset or {})
                             end = end.replace(**offset or {})
@@ -258,7 +258,7 @@ class Range(object):
                         end = start
 
                 if not isinstance(start, Date):
-                    start = Date(now)
+                    start = Date(now, tz=tz)
 
                 if group['time_2']:
                     if verbose:
@@ -299,7 +299,7 @@ class Range(object):
             if end is None:
                 # no end provided, so assume 24 hours
                 if isinstance(start, str):
-                    start = Date(start)
+                    start = Date(start, tz=tz)
                 end = start + '24 hours'
 
             if start > end:
